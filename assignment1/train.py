@@ -1,3 +1,7 @@
+# Elizabeth Huang
+# Last Modified: April 2, 2025
+#TODO:Third task!!
+
 import os
 import time
 import torch
@@ -49,7 +53,7 @@ def train(config):
         print(f"Loaded checkpoint from epoch {start_epoch}")
     
     # Loss function
-    criterion = nn.L1Loss() 
+    criterion = nn.L1Loss() #TODO: extra credit - L2 loss implementation
     
     # Optimizer
     optimizer = optim.Adam(

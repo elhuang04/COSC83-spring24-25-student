@@ -1,3 +1,7 @@
+# Elizabeth Huang
+# Last Modified: April 2, 2025
+#TODO:Second task!!
+
 import os
 import random
 import numpy as np
