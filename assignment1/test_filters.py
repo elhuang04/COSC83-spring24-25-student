@@ -40,44 +40,6 @@ def test_basic_filters(image_path: str, save_path: str = None):
     print("Applying Gaussian filter...")
     gauss3x3 = gaussian_filter(image_rgb, kernel_size=3, sigma=1.0)
     gauss5x5 = gaussian_filter(image_rgb, kernel_size=5, sigma=1.5)
-    
-    #------------ DELETE LATER
-    # Display or save results
-    fig = plt.figure(figsize=(15, 12))
-    
-    plt.subplot(3, 4, 1)
-    plt.imshow(image_rgb)
-    plt.title('Original Image')
-    plt.axis('off')
-    
-    plt.subplot(3, 4, 2)
-    plt.imshow(mean3x3.astype(np.uint8))
-    plt.title('Mean Filter 3x3')
-    plt.axis('off')
-    
-    plt.subplot(3, 4, 3)
-    plt.imshow(mean5x5.astype(np.uint8))
-    plt.title('Mean Filter 5x5')
-    plt.axis('off')
-    
-    plt.subplot(3, 4, 4)
-    plt.imshow(gauss3x3.astype(np.uint8))
-    plt.title('Gaussian Filter 3x3')
-    plt.axis('off')
-    
-    plt.subplot(3, 4, 5)
-    plt.imshow(gauss5x5.astype(np.uint8))
-    plt.title('Gaussian Filter 5x5')
-    plt.axis('off')
-
-    if save_path:
-        plt.savefig(save_path, dpi=300)
-        print(f"Results saved to {save_path}")
-    else:
-        plt.show()
-    
-    plt.close(fig)
-    #------------ END OF DELETE LATER
 
     print("Applying Laplacian filter...")
     laplacian_std = laplacian_filter(gray, kernel_type='standard')
