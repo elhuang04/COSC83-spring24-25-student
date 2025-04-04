@@ -1,5 +1,10 @@
+# Elizabeth Huang
+# Last Modified: April 2, 2025
+#TODO:First task!!
+
 import numpy as np
 from typing import Tuple, Union
+import cv2 #delete later
 
 # 10%
 def convolve2d(image: np.ndarray, kernel: np.ndarray, padding_mode: str = 'constant') -> np.ndarray:
@@ -21,6 +26,28 @@ def convolve2d(image: np.ndarray, kernel: np.ndarray, padding_mode: str = 'const
     # 4. Create output image
     # 5. Apply convolution for each channel
     # 6. Return the result in the same shape as input
+
+    n,m = kernel.shape #kernel dimensions (should be square)
+
+    # ERROR HANDLING
+    if n != m:
+        raise ValueError("kernel dimensions not square")
+    elif n % 2 == 0:
+        raise ValueError("kernel dimensions should be odd")
+
+    if len(image.shape) == 2:
+        return convolve_single_channel(image, kernel, padding_mode)
+    elif len(image.shape) == 3:
+        num_channels = image.shape[2]
+        
+        result_channels = []
+        for channel in range(num_channels):
+            convolved_channel = convolve_single_channel(image[..., channel], 
+                                                        kernel, 
+                                                        padding_mode)
+            result_channels.append(convolved_channel)
+        result = np.stack(result_channels, axis=-1)
+        return result
     
     pass  # Replace with your implementation
 
@@ -178,3 +205,53 @@ def add_noise(image: np.ndarray, noise_type: str = 'gaussian', var: float = 0.01
     
     else:
         raise ValueError("Unknown noise type. Use 'gaussian' or 'salt_pepper'")
+    
+
+# ----------------------- HELPER FUNCTIONS ---------------------------
+def create_kernel(n):
+    return np.ones((n, n)) / (n * n)
+
+
+def convolve_single_channel(image, kernel, padding_mode):
+    n, m = kernel.shape
+    rows, cols = image.shape
+
+    half_n = n//2
+    half_m = m//2
+    
+    padded_img = np.pad(image,
+                        ((half_n, half_n), 
+                         (half_m, half_m)), 
+                        mode=padding_mode)
+    
+    output = np.zeros_like(image) #placeholder
+    
+    for row in range(half_n, rows + half_n):
+        for col in range(half_m, cols + half_m):
+            selection = padded_img[row-half_n:row+half_n+1, 
+                                   col-half_m:col+half_m+1]
+            output[row-half_n, col-half_m] = np.sum(selection * kernel)
+            
+    return output
+
+
+
+#================================== DELETE LATER / SIMPLE TESTING
+image_path = "assignment1/example_images/test.jpg"
+image = cv2.imread(image_path)
+if image is None:
+    raise ValueError(f"Could not read image at {image_path}")
+
+# Convert to RGB for display
+image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+
+# Convert to grayscale for edge detection
+gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+kernel3x3 = create_kernel(3)
+o1 = convolve2d(image_rgb, kernel3x3)
+print(image_rgb.shape, o1.shape)
+o2 = convolve2d(gray, kernel3x3)
+print(gray.shape, o2.shape)
+
+##================================== STOP DELETE
