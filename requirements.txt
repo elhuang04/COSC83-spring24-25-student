@@ -1,7 +1,7 @@
 # Using Python 3.10.16
 numpy == 1.23.5
 torch == 2.6.0
-Pillow == 9.5.0
+Pillow == 11.1.0
 tqdm == 4.67.1
 matplotlib == 3.5.3
 torchvision == 0.21.0
