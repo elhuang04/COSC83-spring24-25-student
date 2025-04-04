@@ -48,8 +48,6 @@ def convolve2d(image: np.ndarray, kernel: np.ndarray, padding_mode: str = 'const
             result_channels.append(convolved_channel)
         result = np.stack(result_channels, axis=-1)
         return result
-    
-    pass  # Replace with your implementation
 
 #5%
 def mean_filter(image: np.ndarray, kernel_size: int = 3, padding_mode: str = 'constant') -> np.ndarray:
@@ -67,8 +65,8 @@ def mean_filter(image: np.ndarray, kernel_size: int = 3, padding_mode: str = 'co
     # TODO: Implement the mean filter
     # 1. Create a mean filter kernel of size kernel_size × kernel_size
     # 2. Apply the convolution using the convolve2d function
-    
-    pass  # Replace with your implementation
+    kernel = np.ones((kernel_size, kernel_size)) / (kernel_size * kernel_size)
+    return convolve2d(image, kernel, padding_mode)
 
 #5%
 def gaussian_kernel(size: int, sigma: float) -> np.ndarray:
@@ -87,8 +85,25 @@ def gaussian_kernel(size: int, sigma: float) -> np.ndarray:
     # 2. Generate grid coordinates centered at 0
     # 3. Compute the Gaussian kernel based on the formula
     # 4. Normalize the kernel so it sums to 1
-    
-    pass  # Replace with your implementation
+
+    center = size // 2 
+    matrix = np.zeros((size, size))
+
+    for i in range(center + 1):
+        for j in range(center + 1):  
+            dist_sq = (i-center)**2 + (j-center)**2
+            val = np.exp(-dist_sq/(2*sigma**2))  #gaussian formula
+
+            matrix[i, j] = val  
+            matrix[i, size-1-j] = val  
+            matrix[size-1-i, size-1-j] = val  
+            matrix[size-1-i, j] = val  
+
+    matrix /= matrix.sum()
+
+    return matrix
+
+
 
 #5%
 def gaussian_filter(image: np.ndarray, kernel_size: int = 3, sigma: float = 1.0, 
@@ -109,7 +124,8 @@ def gaussian_filter(image: np.ndarray, kernel_size: int = 3, sigma: float = 1.0,
     # 1. Generate a Gaussian kernel using the gaussian_kernel function
     # 2. Apply convolution using the convolve2d function
     
-    pass  # Replace with your implementation
+    kernel = gaussian_kernel(kernel_size, sigma)
+    return convolve2d(image, kernel, padding_mode)
 
 #5%
 def laplacian_filter(image: np.ndarray, kernel_type: str = 'standard', 
@@ -224,7 +240,7 @@ def convolve_single_channel(image, kernel, padding_mode):
                          (half_m, half_m)), 
                         mode=padding_mode)
     
-    output = np.zeros_like(image) #placeholder
+    output = np.zeros_like(image)
     
     for row in range(half_n, rows + half_n):
         for col in range(half_m, cols + half_m):
@@ -237,21 +253,33 @@ def convolve_single_channel(image, kernel, padding_mode):
 
 
 #================================== DELETE LATER / SIMPLE TESTING
-image_path = "assignment1/example_images/test.jpg"
-image = cv2.imread(image_path)
-if image is None:
-    raise ValueError(f"Could not read image at {image_path}")
+# image_path = "assignment1/example_images/test.jpg"
+# image = cv2.imread(image_path)
+# if image is None:
+#     raise ValueError(f"Could not read image at {image_path}")
 
-# Convert to RGB for display
-image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+# # Convert to RGB for display
+# image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-# Convert to grayscale for edge detection
-gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+# # Convert to grayscale for edge detection
+# gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-kernel3x3 = create_kernel(3)
-o1 = convolve2d(image_rgb, kernel3x3)
-print(image_rgb.shape, o1.shape)
-o2 = convolve2d(gray, kernel3x3)
-print(gray.shape, o2.shape)
+# kernel3x3 = create_kernel(3)
+# o1 = convolve2d(image_rgb, kernel3x3)
+# print(image_rgb.shape, o1.shape)
+# o2 = convolve2d(gray, kernel3x3)
+# print(gray.shape, o2.shape)
 
+
+# print("TEST 2")
+# mean = mean_filter(gray)
+# print(mean)
+# gaussian = gaussian_filter(gray)
+# print(gaussian)
+
+# print("TEST 3")
+# mean2 = mean_filter(image_rgb)
+# print(mean2)
+# gaussian2 = gaussian_filter(image_rgb)
+# print(gaussian2)
 ##================================== STOP DELETE
