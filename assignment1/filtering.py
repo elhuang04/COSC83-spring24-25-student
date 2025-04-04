@@ -26,8 +26,7 @@ def convolve2d(image: np.ndarray, kernel: np.ndarray, padding_mode: str = 'const
     # 4. Create output image
     # 5. Apply convolution for each channel
     # 6. Return the result in the same shape as input
-
-    n,m = kernel.shape #kernel dimensions (should be square)
+    n, m = kernel.shape  # Kernel dimensions (should be square)
 
     # ERROR HANDLING
     if n != m:
@@ -42,9 +41,7 @@ def convolve2d(image: np.ndarray, kernel: np.ndarray, padding_mode: str = 'const
         
         result_channels = []
         for channel in range(num_channels):
-            convolved_channel = convolve_single_channel(image[..., channel], 
-                                                        kernel, 
-                                                        padding_mode)
+            convolved_channel = convolve_single_channel(image[..., channel], kernel, padding_mode)
             result_channels.append(convolved_channel)
         result = np.stack(result_channels, axis=-1)
         return result
@@ -66,7 +63,9 @@ def mean_filter(image: np.ndarray, kernel_size: int = 3, padding_mode: str = 'co
     # 1. Create a mean filter kernel of size kernel_size × kernel_size
     # 2. Apply the convolution using the convolve2d function
     kernel = np.ones((kernel_size, kernel_size)) / (kernel_size * kernel_size)
-    return convolve2d(image, kernel, padding_mode)
+    res = convolve2d(image, kernel, padding_mode)
+    # print("mean summary", res.shape, res[0])
+    return res
 
 #5%
 def gaussian_kernel(size: int, sigma: float) -> np.ndarray:
@@ -87,21 +86,21 @@ def gaussian_kernel(size: int, sigma: float) -> np.ndarray:
     # 4. Normalize the kernel so it sums to 1
 
     center = size // 2 
-    matrix = np.zeros((size, size))
+    kernel = np.zeros((size, size))
 
     for i in range(center + 1):
         for j in range(center + 1):  
             dist_sq = (i-center)**2 + (j-center)**2
             val = np.exp(-dist_sq/(2*sigma**2))  #gaussian formula
 
-            matrix[i, j] = val  
-            matrix[i, size-1-j] = val  
-            matrix[size-1-i, size-1-j] = val  
-            matrix[size-1-i, j] = val  
+            kernel[i, j] = val  
+            kernel[i, size-1-j] = val  
+            kernel[size-1-i, size-1-j] = val  
+            kernel[size-1-i, j] = val  
 
-    matrix /= matrix.sum()
+    kernel /= kernel.sum()
 
-    return matrix
+    return kernel
 
 
 
@@ -144,8 +143,22 @@ def laplacian_filter(image: np.ndarray, kernel_type: str = 'standard',
     # TODO: Implement the Laplacian filter
     # 1. Define the appropriate Laplacian kernel based on kernel_type
     # 2. Apply convolution using the convolve2d function
-    
-    pass  # Replace with your implementation
+    if kernel_type == "standard":
+        kernel = np.array([
+                            [ 0, -1,  0],
+                            [-1,  4, -1],
+                            [ 0, -1,  0]
+                        ])
+
+    elif kernel_type == "diagonal":
+        kernel = np.array([
+                            [ 0,  0, -1],
+                            [ 0,  4,  0],
+                            [-1,  0,  0]
+                        ])
+    res = convolve2d(image, kernel, padding_mode)
+    print("laplacian info:", res.shape, res[0])
+    return res
 
 #10%
 def sobel_filter(image: np.ndarray, direction: str = 'both', kernel_size: int = 3, 
@@ -169,7 +182,45 @@ def sobel_filter(image: np.ndarray, direction: str = 'both', kernel_size: int = 
     # 3. For 'both' direction, compute gradient magnitude and direction
     # 4. Return appropriate output based on direction parameter
     
-    pass  # Replace with your implementation
+    sobel_x = np.zeros((kernel_size, kernel_size))
+    sobel_y = np.zeros((kernel_size, kernel_size))
+    
+    center = kernel_size // 2
+    # for i in range(center + 1):
+    #     for j in range(center + 1):  
+    #         sobel_x[i, j] = (i - center)
+    #         sobel_x[j, i] = (i - center)
+    #         sobel_x[kernel_size - 1 - i, j] = (i - center)
+    #         sobel_x[kernel_size - 1 - i, kernel_size - 1 - j] = (i - center)
+
+    #         sobel_y[i, j] = (j - center)
+    #         sobel_y[j, i] = (j - center)
+    #         sobel_y[kernel_size - 1 - i, j] = (j - center)
+    #         sobel_y[kernel_size - 1 - i, kernel_size - 1 - j] = (j - center)
+            
+
+    for i in range(kernel_size):
+        for j in range(kernel_size):
+            sobel_x[i,j] = i - center
+            sobel_y[i,j] = j - center
+
+    sobel_x /= np.sum(np.abs(sobel_x))
+    sobel_y /= np.sum(np.abs(sobel_y))
+
+    if direction == 'x':
+        grad_x = convolve2d(image, sobel_x, padding_mode)
+        return grad_x
+    elif direction == 'y':
+        grad_y = convolve2d(image, sobel_y, padding_mode)
+        return grad_y
+    elif direction == 'both':
+        grad_x = convolve2d(image, sobel_x, padding_mode)
+        grad_y = convolve2d(image, sobel_y, padding_mode)
+
+        magnitude = np.sqrt(grad_x**2 + grad_y**2)
+        direction = np.arctan2(grad_y, grad_x)
+        return magnitude, direction
+
 
 # These helper functions are provided for you
 
@@ -224,16 +275,12 @@ def add_noise(image: np.ndarray, noise_type: str = 'gaussian', var: float = 0.01
     
 
 # ----------------------- HELPER FUNCTIONS ---------------------------
-def create_kernel(n):
-    return np.ones((n, n)) / (n * n)
-
-
 def convolve_single_channel(image, kernel, padding_mode):
     n, m = kernel.shape
     rows, cols = image.shape
 
-    half_n = n//2
-    half_m = m//2
+    half_n = n // 2
+    half_m = m // 2
     
     padded_img = np.pad(image,
                         ((half_n, half_n), 
@@ -241,7 +288,6 @@ def convolve_single_channel(image, kernel, padding_mode):
                         mode=padding_mode)
     
     output = np.zeros_like(image)
-    
     for row in range(half_n, rows + half_n):
         for col in range(half_m, cols + half_m):
             selection = padded_img[row-half_n:row+half_n+1, 
@@ -250,36 +296,16 @@ def convolve_single_channel(image, kernel, padding_mode):
             
     return output
 
-
-
 #================================== DELETE LATER / SIMPLE TESTING
-# image_path = "assignment1/example_images/test.jpg"
-# image = cv2.imread(image_path)
-# if image is None:
-#     raise ValueError(f"Could not read image at {image_path}")
+image_path = "assignment1/example_images/test.jpg"
+image = cv2.imread(image_path)
+if image is None:
+    raise ValueError(f"Could not read image at {image_path}")
 
-# # Convert to RGB for display
-# image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+# Convert to RGB for display
+image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-# # Convert to grayscale for edge detection
-# gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+# Convert to grayscale for edge detection
+gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
 
-# kernel3x3 = create_kernel(3)
-# o1 = convolve2d(image_rgb, kernel3x3)
-# print(image_rgb.shape, o1.shape)
-# o2 = convolve2d(gray, kernel3x3)
-# print(gray.shape, o2.shape)
-
-
-# print("TEST 2")
-# mean = mean_filter(gray)
-# print(mean)
-# gaussian = gaussian_filter(gray)
-# print(gaussian)
-
-# print("TEST 3")
-# mean2 = mean_filter(image_rgb)
-# print(mean2)
-# gaussian2 = gaussian_filter(image_rgb)
-# print(gaussian2)
 ##================================== STOP DELETE
