@@ -4,7 +4,10 @@
 
 import numpy as np
 from typing import Tuple, Union
+
+# ONLY FOR TESTING
 import cv2 #delete later
+import matplotlib.pyplot as plt #delete later
 
 # 10%
 def convolve2d(image: np.ndarray, kernel: np.ndarray, padding_mode: str = 'constant') -> np.ndarray:
@@ -143,21 +146,22 @@ def laplacian_filter(image: np.ndarray, kernel_type: str = 'standard',
     # TODO: Implement the Laplacian filter
     # 1. Define the appropriate Laplacian kernel based on kernel_type
     # 2. Apply convolution using the convolve2d function
+    image = image.astype(np.float32)
+
     if kernel_type == "standard":
         kernel = np.array([
-                            [ 0, -1,  0],
-                            [-1,  4, -1],
-                            [ 0, -1,  0]
+                            [ 0, 1,  0],
+                            [1,  -4, 1],
+                            [ 0, 1,  0]
                         ])
-
     elif kernel_type == "diagonal":
         kernel = np.array([
-                            [ 0,  0, -1],
-                            [ 0,  4,  0],
-                            [-1,  0,  0]
+                            [ 1,  1, 1],
+                            [ 1,  -8,  1],
+                            [1,  1,  1]
                         ])
     res = convolve2d(image, kernel, padding_mode)
-    print("laplacian info:", res.shape, res[0])
+    # print("laplacian info:", res.shape, res[0])
     return res
 
 #10%
@@ -181,7 +185,8 @@ def sobel_filter(image: np.ndarray, direction: str = 'both', kernel_size: int = 
     # 2. Apply convolution based on the specified direction
     # 3. For 'both' direction, compute gradient magnitude and direction
     # 4. Return appropriate output based on direction parameter
-    
+    image = image.astype(np.float32)
+
     sobel_x = np.zeros((kernel_size, kernel_size))
     sobel_y = np.zeros((kernel_size, kernel_size))
     
@@ -201,8 +206,8 @@ def sobel_filter(image: np.ndarray, direction: str = 'both', kernel_size: int = 
 
     for i in range(kernel_size):
         for j in range(kernel_size):
-            sobel_x[i,j] = i - center
-            sobel_y[i,j] = j - center
+            sobel_x[i,j] = j - center
+            sobel_y[i,j] = i - center
 
     sobel_x /= np.sum(np.abs(sobel_x))
     sobel_y /= np.sum(np.abs(sobel_y))
@@ -229,7 +234,9 @@ def normalize_image(image: np.ndarray) -> np.ndarray:
     Normalize image values to range [0, 255] and convert to uint8.
     """
     min_val = np.min(image)
+    # print(min_val)
     max_val = np.max(image)
+    # print(max_val)
     
     # Check to avoid division by zero
     if max_val == min_val:
@@ -273,7 +280,6 @@ def add_noise(image: np.ndarray, noise_type: str = 'gaussian', var: float = 0.01
     else:
         raise ValueError("Unknown noise type. Use 'gaussian' or 'salt_pepper'")
     
-
 # ----------------------- HELPER FUNCTIONS ---------------------------
 def convolve_single_channel(image, kernel, padding_mode):
     n, m = kernel.shape
@@ -295,17 +301,3 @@ def convolve_single_channel(image, kernel, padding_mode):
             output[row-half_n, col-half_m] = np.sum(selection * kernel)
             
     return output
-
-#================================== DELETE LATER / SIMPLE TESTING
-image_path = "assignment1/example_images/test.jpg"
-image = cv2.imread(image_path)
-if image is None:
-    raise ValueError(f"Could not read image at {image_path}")
-
-# Convert to RGB for display
-image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
-
-# Convert to grayscale for edge detection
-gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-##================================== STOP DELETE
