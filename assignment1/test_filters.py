@@ -397,7 +397,30 @@ def test_all(image_path: str, output_dir: str = "filter_results"):
 
 if __name__ == "__main__":
     # Replace with the path to your test image
-    test_image_path = "assignment1/example_images/50px.jpg"
+    #test_image_path = "assignment1/example_images/test.jpg"
     
     # Run all tests
-    test_all(test_image_path)
+    #test_all(test_image_path)
+
+    test_image_paths = [
+    "assignment1/example_images/test.jpg",
+    "assignment1/example_images/50px.jpg",
+    "assignment1/example_images/100px.png",
+    "assignment1/example_images/500px.jpg",
+    ]
+
+    for path in test_image_paths:
+        print(f"\n Running tests on: {path}")
+        try:
+            test_all(path)
+        except TypeError as e:
+            print(f"Skipping {path} due to TypeError: {e}")
+        except Exception as e:
+            print(f"Unexpected error on {path}: {e}")
+
+    
+
+
+
+
+    
