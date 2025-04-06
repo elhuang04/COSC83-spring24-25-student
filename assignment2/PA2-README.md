@@ -1,5 +1,3 @@
-I'll update the README based on your requirements, focusing on a textual description of the network architecture, making BCE the default loss function, and adding tips about using generative AI and Weights & Biases for visualization.
-
 # Computer Vision Assignment: Feature Detection, Matching, and Deep Learning Methods
 
 ## Overview
