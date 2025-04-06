@@ -195,7 +195,8 @@ python main.py --action=train_test
 
 ## Running the Assignment
 
-1. Download the Oxford5K dataset provided on Canvas and place your image pairs in the `images` directory for part1.
+1. Download the Oxford5K dataset provided on Canvas and put it as part2/images/<name>.jpg     
+Place your image pairs in the data directory for part1
 2. Run the main script for traditional methods:
    ```
    python main.py
