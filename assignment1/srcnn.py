@@ -13,6 +13,9 @@ class ResidualBlock(nn.Module):
         # 1. Two convolutional layers with kernel size 3, padding 1, and the same number of channels
         # 2. Two batch normalization layers
         # 3. ReLU activation
+        #extracting feature, makes the image smaller
+
+        self.rel = F.relu()
         pass
         
     def forward(self, x):
@@ -33,7 +36,7 @@ class UpscaleBlock(nn.Module):
         # 1. Calculate output channels for sub-pixel convolution (hint: multiply in_channels by scale_factor^2)
         # 2. Create a convolutional layer with kernel size 3 and padding 1
         # 3. Create a pixel shuffle layer with the given scale factor
-        # 4. Create a ReLU activation
+        # 4. Create a ReLU activation 
         pass
         
     def forward(self, x):

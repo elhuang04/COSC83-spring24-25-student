@@ -73,10 +73,17 @@ class SuperResolutionDataset(Dataset):
         """
         # TODO: Implement the __getitem__ method that:
         # 1. Loads a high-resolution image from the dataset
+        hr_img = Image.open(self.image_files[idx]).convert('RGB')
         # 2. Resizes the HR image to a fixed size
+        hr_img = hr_img.resize((self.hr_size, self.hr_size), Image.BICUBIC)
         # 3. Randomly crops a patch from the HR image
+        patch = _random_crop(self, img) # type: ignore | defer implementation
         # 4. Applies data augmentation if enabled
+        _augment(self, img) # type: ignore | defer implementation
         # 5. Randomly selects a scale factor and downsampling method
+        scale_factor = random.choice(self.scale_factors)
+        ds_method = random.choice(self.downsample_methods)
+        _downsample(self, hr_img, scale_factor, ds_method) # type: ignore | defer implementation
         # 6. Creates a low-resolution version of the patch by downsampling
         # 7. Converts both HR and LR patches to tensors
         # 8. Handles errors gracefully and returns valid tensors

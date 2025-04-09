@@ -180,6 +180,9 @@ def compare_with_opencv(image_path: str, save_path: str = None):
     cv_laplacian_norm = normalize_image(cv_laplacian)
     cv_sobel_x_norm = normalize_image(cv_sobel_x)
     cv_sobel_y_norm = normalize_image(cv_sobel_y)
+
+    # print("my laplacian", our_laplacian_norm[0])
+    # print("cv laplacian", cv_laplacian_norm[0])
     
     # Display or save comparison
     fig = plt.figure(figsize=(15, 12))
@@ -417,10 +420,3 @@ if __name__ == "__main__":
             print(f"Skipping {path} due to TypeError: {e}")
         except Exception as e:
             print(f"Unexpected error on {path}: {e}")
-
-    
-
-
-
-
-    
