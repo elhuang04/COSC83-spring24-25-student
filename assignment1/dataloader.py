@@ -73,25 +73,64 @@ class SuperResolutionDataset(Dataset):
         """
         # TODO: Implement the __getitem__ method that:
         # 1. Loads a high-resolution image from the dataset
-        hr_img = Image.open(self.image_files[idx]).convert('RGB')
         # 2. Resizes the HR image to a fixed size
-        hr_img = hr_img.resize((self.hr_size, self.hr_size), Image.BICUBIC)
         # 3. Randomly crops a patch from the HR image
-        patch = _random_crop(self, img) # type: ignore | defer implementation
         # 4. Applies data augmentation if enabled
-        _augment(self, img) # type: ignore | defer implementation
         # 5. Randomly selects a scale factor and downsampling method
-        scale_factor = random.choice(self.scale_factors)
-        ds_method = random.choice(self.downsample_methods)
-        _downsample(self, hr_img, scale_factor, ds_method) # type: ignore | defer implementation
         # 6. Creates a low-resolution version of the patch by downsampling
         # 7. Converts both HR and LR patches to tensors
         # 8. Handles errors gracefully and returns valid tensors
-        #
         # Use the helper methods (_random_crop, _augment, _downsample) that are already implemented
         # Make sure to handle all edge cases and errors
-        
-        pass  # Replace with your implementation
+        image = self.image_files[idx]
+        filename = os.path.basename(image)
+
+        # Default empty tensor
+        dummy_tensor = torch.zeros((3, self.hr_size, self.hr_size), dtype=torch.float32)
+
+        if not os.path.exists(image):
+            return {
+                'lr': dummy_tensor.clone(),
+                'hr': dummy_tensor.clone(),
+                'scale_factor': -1,
+                'method': 'none',
+                'filename': filename,
+                'error': f"File {image} not found"
+            }
+
+        try:
+            hr_img = Image.open(image).convert('RGB')
+            hr_img = hr_img.resize((self.hr_size, self.hr_size), Image.BICUBIC)
+            
+            hr_patch = hr_img._random_crop(self, hr_img)  
+            hr_patch = hr_img._augment(self, hr_patch)     
+
+            scale_factor = random.choice(self.scale_factors)
+            ds_method = random.choice(self.downsample_methods)
+            lr_patch = hr_img._downsample(self, hr_patch, scale_factor, ds_method)
+
+            to_tensor = transforms.ToTensor()
+            hr_tensor = to_tensor(hr_patch)
+            lr_tensor = to_tensor(lr_patch)
+
+            return {
+                'lr': lr_tensor,
+                'hr': hr_tensor,
+                'scale_factor': scale_factor,
+                'method': ds_method,
+                'filename': filename,
+                'error': None
+            }
+
+        except Exception as e:
+            return {
+                'lr': dummy_tensor.clone(),
+                'hr': dummy_tensor.clone(),
+                'scale_factor': -1,
+                'method': 'none',
+                'filename': filename,
+                'error': str(e)
+            }
     
     def _random_crop(self, img):
         """Safely crop a patch from the image"""

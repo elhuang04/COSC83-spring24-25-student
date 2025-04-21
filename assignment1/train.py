@@ -129,7 +129,230 @@ def train(config):
     # to understand the expected behavior and parameters.
     
     # Your code here
-    
+    def train_one_epoch(model, dataloader, optimizer, criterion, device):
+        model.train()
+        epoch_loss = 0
+        pbar = tqdm(dataloader, desc="Training", ncols=100)
+
+        for batch in pbar:
+            if batch['error']:
+                # print(f"Skipping {batch['filename']}: {batch['error']}")
+                continue
+            hr_image = batch['hr'].to(device)
+            lr_image = batch['lr'].to(device)
+
+            optimizer.zero_grad()
+            sr_image = model(lr_image)
+            loss = criterion(sr_image, hr_image)
+            loss.backward()
+            optimizer.step()
+
+            epoch_loss += loss.item()
+            pbar.set_postfix(loss=loss.item())
+
+        return epoch_loss / len(dataloader)
+
+
+    def validate_one_epoch(model, dataloader, criterion, device, epoch, config):
+        model.eval()
+        epoch_loss = 0
+        epoch_psnr = 0
+        epoch_ssim = 0
+        pbar = tqdm(dataloader, desc=f"Validating Epoch {epoch}", ncols=100)
+
+        with torch.no_grad():
+            for i, batch in enumerate(pbar):
+                if batch['error']:
+                    continue
+
+                hr_image = batch['hr'].to(device)
+                lr_image = batch['lr'].to(device)
+
+                sr_image = model(lr_image)
+                val_loss = criterion(sr_image, hr_image)
+                epoch_loss += val_loss.item()
+
+                psnr = calculate_psnr(sr_image, hr_image)
+                ssim = calculate_ssim(sr_image, hr_image)
+                epoch_psnr += psnr
+                epoch_ssim += ssim
+
+                if i < config['val_batch_limit']:
+                    save_image(sr_image, os.path.join(config['sample_dir'], f"epoch{epoch}_batch{batch_idx}_sr.png"))
+                    save_image(lr_image, os.path.join(config['sample_dir'], f"epoch{epoch}_batch{batch_idx}_lr.png"))
+                    save_image(hr_image, os.path.join(config['sample_dir'], f"epoch{epoch}_batch{batch_idx}_hr.png"))
+
+        n = len(dataloader)
+        return epoch_loss / n, epoch_psnr / n, epoch_ssim / n
+
+
+    # Training loop
+    for epoch in range(start_epoch, config['num_epochs']):
+        model.train()
+        epoch_losses = []
+        
+        # Progress bar for training
+        train_pbar = tqdm(train_dataloader, desc=f"Epoch {epoch+1}/{config['num_epochs']}")
+        for batch in train_pbar:
+            # Get data
+            lr_imgs = batch['lr'].to(device)
+            hr_imgs = batch['hr'].to(device)
+            
+            # Zero gradients
+            optimizer.zero_grad()
+            
+            # Forward pass
+            sr_imgs = model(lr_imgs)
+            
+            # Calculate loss
+            loss = criterion(sr_imgs, hr_imgs)
+            
+            # Backward pass and optimize
+            loss.backward()
+            optimizer.step()
+            
+            # Update progress bar
+            epoch_losses.append(loss.item())
+            train_pbar.set_postfix({"loss": f"{loss.item():.4f}"})
+            
+        
+        # Update learning rate
+        scheduler.step()
+        
+        # Calculate average training loss
+        train_loss = np.mean(epoch_losses)
+        train_losses.append(train_loss)
+        
+        # Only perform validation at specified intervals
+        should_validate = (
+            config['validation_interval'] > 0 and 
+            (epoch + 1) % config['validation_interval'] == 0
+        ) or (epoch + 1 == config['num_epochs'])
+        
+        if should_validate:
+            # Validation
+            model.eval()
+            val_loss = 0.0
+            val_psnr = 0.0
+            val_ssim = 0.0
+            val_count = 0
+            
+            with torch.no_grad():
+                # Progress bar for validation (limit number of batches to process)
+                val_batch_limit = config.get('val_batch_limit', float('inf'))
+                val_batches = list(val_dataloader)
+                
+                # Shuffle and limit validation batches
+                if len(val_batches) > val_batch_limit:
+                    random.shuffle(val_batches)
+                    val_batches = val_batches[:val_batch_limit]
+                
+                val_pbar = tqdm(val_batches, desc="Validation")
+                
+                for batch_idx, batch in enumerate(val_pbar):
+                    # Get data
+                    lr_imgs = batch['lr'].to(device)
+                    hr_imgs = batch['hr'].to(device)
+                    
+                    # Forward pass
+                    sr_imgs = model(lr_imgs)
+                    
+                    # Calculate metrics
+                    val_loss += criterion(sr_imgs, hr_imgs).item()
+                    
+                    # Calculate PSNR and SSIM more efficiently (batch-wise)
+                    sr_imgs_clamped = sr_imgs.clamp(0.0, 1.0)
+                    psnr = fast_psnr(sr_imgs_clamped.cpu(), hr_imgs.cpu())
+                    ssim = fast_ssim(sr_imgs_clamped.cpu(), hr_imgs.cpu())
+                    
+                    val_psnr += psnr
+                    val_ssim += ssim
+                    val_count += 1
+                    
+                    # Update progress bar
+                    val_pbar.set_postfix({
+                        "loss": f"{val_loss/val_count:.4f}",
+                        "PSNR": f"{val_psnr/val_count:.2f}",
+                        "SSIM": f"{val_ssim/val_count:.4f}"
+                    })
+                    
+                    # Save sample images from the first batch
+                    if batch_idx == 0:
+                        for i in range(min(3, lr_imgs.size(0))):
+                            # Get images
+                            lr_img = lr_imgs[i].cpu()
+                            sr_img = sr_imgs_clamped[i].cpu()
+                            hr_img = hr_imgs[i].cpu()
+                            
+                            # Up-sample LR image to match SR dimensions for visualization
+                            # Get dimensions
+                            _, _, sr_h, sr_w = sr_img.unsqueeze(0).shape
+                            
+                            # Resize LR to match SR using interpolate
+                            lr_img_upscaled = torch.nn.functional.interpolate(
+                                lr_img.unsqueeze(0), 
+                                size=(sr_h, sr_w), 
+                                mode='bicubic', 
+                                align_corners=False
+                            ).squeeze(0).clamp(0, 1)
+                            
+                            # Save concatenated images
+                            save_image(
+                                torch.cat([
+                                    lr_img_upscaled,
+                                    sr_img,
+                                    hr_img
+                                ], dim=2),
+                                os.path.join(config['sample_dir'], f"epoch_{epoch+1}_sample_{i}.png")
+                            )
+            
+            # Calculate average validation metrics
+            val_loss /= val_count
+            val_psnr /= val_count
+            val_ssim /= val_count
+            
+            # Save metrics
+            val_losses.append(val_loss)
+            val_psnrs.append(val_psnr)
+            val_ssims.append(val_ssim)
+            
+            # Print epoch summary
+            print(f"Epoch {epoch+1}/{config['num_epochs']} - "
+                f"Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}, "
+                f"PSNR: {val_psnr:.2f}, SSIM: {val_ssim:.4f}")
+            
+            # Save best model
+            if val_psnr > best_psnr:
+                best_psnr = val_psnr
+                torch.save({
+                    'epoch': epoch + 1,
+                    'model_state_dict': model.state_dict(),
+                    'optimizer_state_dict': optimizer.state_dict(),
+                    'loss': val_loss,
+                    'psnr': val_psnr,
+                    'ssim': val_ssim,
+                }, os.path.join(config['checkpoint_dir'], 'best_model.pth'))
+                print(f"Saved best model with PSNR: {val_psnr:.2f}")
+        else:
+            # Print training-only summary
+            print(f"Epoch {epoch+1}/{config['num_epochs']} - Train Loss: {train_loss:.4f}")
+            # Add placeholder values to keep arrays aligned
+            val_losses.append(None)
+            val_psnrs.append(None)
+            val_ssims.append(None)
+        
+        # Save checkpoint
+        if (epoch + 1) % config['save_every'] == 0:
+            torch.save({
+                'epoch': epoch + 1,
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'loss': val_loss if should_validate else None,
+                'psnr': val_psnr if should_validate else None,
+                'ssim': val_ssim if should_validate else None,
+            }, os.path.join(config['checkpoint_dir'], f'checkpoint_epoch_{epoch+1}.pth'))
+
+    #--------------------------------------------------------------------
     
     # Plot training history (after training loop completes)
     plt.figure(figsize=(12, 8))

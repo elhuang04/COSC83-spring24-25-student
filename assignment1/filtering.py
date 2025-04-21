@@ -82,6 +82,7 @@ def gaussian_kernel(size: int, sigma: float) -> np.ndarray:
     # 2. Generate grid coordinates centered at 0
     # 3. Compute the Gaussian kernel based on the formula
     # 4. Normalize the kernel so it sums to 1
+    assert size % 2 == 1, "kernel dimensions should be odd"
 
     center = size // 2 
     kernel = np.zeros((size, size))
@@ -180,75 +181,74 @@ def sobel_filter(image: np.ndarray, direction: str = 'both', kernel_size: int = 
     # 2. Apply convolution based on the specified direction
     # 3. For 'both' direction, compute gradient magnitude and direction
     # 4. Return appropriate output based on direction parameter
+    image = image.copy().astype(np.float32)
 
-    
-    # sobel_x = np.zeros((kernel_size, kernel_size))
-    # sobel_y = np.zeros((kernel_size, kernel_size))
-    
     # center = kernel_size // 2
+    # sobel_x = np.zeros((kernel_size, kernel_size), dtype=np.float64)
+    # sobel_y = np.zeros((kernel_size, kernel_size), dtype=np.float64)
+
     # gaussian = gaussian_kernel(kernel_size, sigma)
 
     # for i in range(kernel_size):
     #     for j in range(kernel_size):
-    #         sobel_x[i,j] = (j - center) #+ gaussian[i,j]
-    
-    # sobel_y = np.transpose(sobel_y)
+    #         dx = j - center
+    #         dy = i - center
 
+    #         sobel_x[i, j] = dx * gaussian[i, j]
+    #         sobel_y[i, j] = dy * gaussian[i, j]
 
-    # for i in range(kernel_size):
-    #     for j in range(kernel_size):
-    #         sobel_x[i,j] += gaussian[i,j]
-    #         sobel_y[i,j] += gaussian[i,j]
-        
     # sobel_x /= np.sum(np.abs(sobel_x))
     # sobel_y /= np.sum(np.abs(sobel_y))
 
-    # print("SOBEL X", sobel_x)
-    # print("SOBEL Y", sobel_y)
+    if kernel_size == 3:
+        sobel_x = np.array([[-1, 0, 1],
+                            [-2, 0, 2],
+                            [-1, 0, 1]])
 
-    # if direction == 'x':
-    #     grad_x = convolve2d(image, sobel_x, padding_mode)
-    #     return grad_x
-    # elif direction == 'y':
-    #     grad_y = convolve2d(image, sobel_y, padding_mode)
-    #     return grad_y
-    # elif direction == 'both':
-    #     grad_x = convolve2d(image, sobel_x, padding_mode)
-    #     grad_y = convolve2d(image, sobel_y, padding_mode)
+        sobel_y = np.array([[-1, -2, -1],
+                            [ 0,  0,  0],
+                            [ 1,  2,  1]])
 
-    #     magnitude = np.sqrt(grad_x**2 + grad_y**2)
-    #     direction = np.arctan2(grad_y, grad_x)
-    #     return magnitude, direction
-    
+    elif kernel_size == 5:
+        sobel_x = np.array([[ 1,  2,  0, -2, -1],
+                            [ 4,  8,  0, -8, -4],
+                            [ 6, 12,  0, -12, -6],
+                            [ 4,  8,  0, -8, -4],
+                            [ 1,  2,  0, -2, -1]])
 
-    image = image.astype(np.float32)
+        sobel_y = np.array([[-1, -4, -6, -4, -1],
+                            [-2, -8, -12, -8, -2],
+                            [ 0,  0,  0,  0,  0],
+                            [ 2,  8,  12,  8,  2],
+                            [ 1,  4,  6,  4,  1]])
 
-    sobel_x = np.zeros((kernel_size, kernel_size))
-    sobel_y = np.zeros((kernel_size, kernel_size))
-    
-    center = kernel_size // 2
+    elif kernel_size == 7:
+        sobel_x = np.array([[ 1,  2,  0, -2, -1, -2,  1],
+                            [ 4,  8,  0, -8, -4, -8,  4],
+                            [ 6, 12,  0, -12, -6, -12,  6],
+                            [ 4,  8,  0, -8, -4, -8,  4],
+                            [ 1,  2,  0, -2, -1, -2,  1]])
 
-    for i in range(kernel_size):
-        for j in range(kernel_size):
-            sobel_x[i,j] = j - center
-            sobel_y[i,j] = i - center
-
-    sobel_x /= np.sum(np.abs(sobel_x))
-    sobel_y /= np.sum(np.abs(sobel_y))
+        sobel_y = np.array([[-1, -4, -6, -4, -1, -4,  1],
+                            [-2, -8, -12, -8, -2, -8,  2],
+                            [ 0,  0,  0,  0,  0,  0,  0],
+                            [ 2,  8,  12,  8,  2,  8, -2],
+                            [ 1,  4,  6,  4,  1,  4, -1]])
 
     if direction == 'x':
         grad_x = convolve2d(image, sobel_x, padding_mode)
         return grad_x
+
     elif direction == 'y':
         grad_y = convolve2d(image, sobel_y, padding_mode)
         return grad_y
+
     elif direction == 'both':
         grad_x = convolve2d(image, sobel_x, padding_mode)
         grad_y = convolve2d(image, sobel_y, padding_mode)
-
         magnitude = np.sqrt(grad_x**2 + grad_y**2)
-        direction = np.arctan2(grad_y, grad_x)
-        return magnitude, direction
+        angle = np.arctan2(grad_y, grad_x)
+        return magnitude, angle
 
 
 # These helper functions are provided for you

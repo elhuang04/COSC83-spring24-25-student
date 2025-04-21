@@ -196,4 +196,4 @@ if __name__ == "__main__":
     
     test_model(config)
 
-    #python test.py --model_path checkpoints/best_model.pth --test_dir /Users/f007fxx/Desktop/COSC83-spring24-25/assignment1/DIV2K_valid_HR --output_dir results --save_images --calculate_metrics
+    # python test.py --model_path checkpoints/best_model.pth --test_dir DIV2K_valid_HR --output_dir results --save_images --calculate_metrics
