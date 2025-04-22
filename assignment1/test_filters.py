@@ -612,7 +612,7 @@ def create_figure_2(image_path: str, save_path: str = None):
         plt.show()
 
 
-def test_all(image_path: str, output_dir: str = "filter_results"):
+def test_all(image_path: str, output_dir: str = "assignment1/filter_results"):
     """
     Run all tests on the given image.
     
@@ -664,7 +664,8 @@ if __name__ == "__main__":
 
     test_image_paths = [
     # "assignment1/example_images/test.jpg",
-    "assignment1/example_images/100px.png",
+    # "assignment1/example_images/100px.png",
+    "assignment1/example_images/self_photo.jpg",
     # "assignment1/example_images/500px.jpg",
     # "assignment1/example_images/Bliss_(Windows_XP).png",
     # "assignment1/example_images/download.jpeg",
