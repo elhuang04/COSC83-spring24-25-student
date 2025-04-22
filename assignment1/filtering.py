@@ -1,5 +1,5 @@
 # Elizabeth Huang
-# Last Modified: April 2, 2025
+# Last Modified: April 21, 2025
 
 import numpy as np
 from typing import Tuple, Union
@@ -17,7 +17,6 @@ def convolve2d(image: np.ndarray, kernel: np.ndarray, padding_mode: str = 'const
     Returns:
         Convolved image (same size as input)
     """
-    # TODO: Implement the 2D convolution operation
     # 1. Check if kernel dimensions are odd
     # 2. Handle both 2D (grayscale) and 3D (color) images
     # 3. Calculate appropriate padding
@@ -57,7 +56,6 @@ def mean_filter(image: np.ndarray, kernel_size: int = 3, padding_mode: str = 'co
     Returns:
         Filtered image
     """
-    # TODO: Implement the mean filter
     # 1. Create a mean filter kernel of size kernel_size × kernel_size
     # 2. Apply the convolution using the convolve2d function
     kernel = np.ones((kernel_size, kernel_size)) / (kernel_size * kernel_size)
@@ -77,7 +75,6 @@ def gaussian_kernel(size: int, sigma: float) -> np.ndarray:
     Returns:
         Gaussian kernel (normalized)
     """
-    # TODO: Implement the Gaussian kernel generation
     # 1. Check if kernel size is odd
     # 2. Generate grid coordinates centered at 0
     # 3. Compute the Gaussian kernel based on the formula
@@ -118,7 +115,6 @@ def gaussian_filter(image: np.ndarray, kernel_size: int = 3, sigma: float = 1.0,
     Returns:
         Filtered image
     """
-    # TODO: Implement the Gaussian filter
     # 1. Generate a Gaussian kernel using the gaussian_kernel function
     # 2. Apply convolution using the convolve2d function
     
@@ -139,7 +135,6 @@ def laplacian_filter(image: np.ndarray, kernel_type: str = 'standard',
     Returns:
         Filtered image
     """
-    # TODO: Implement the Laplacian filter
     # 1. Define the appropriate Laplacian kernel based on kernel_type
     # 2. Apply convolution using the convolve2d function
     image = image.astype(np.float32)
@@ -176,13 +171,13 @@ def sobel_filter(image: np.ndarray, direction: str = 'both', kernel_size: int = 
         If direction is 'both', returns (gradient_magnitude, gradient_direction)
         Otherwise, returns the filtered image
     """
-    # TODO: Implement the Sobel filter
     # 1. Define Sobel kernels in x and y directions based on kernel_size
     # 2. Apply convolution based on the specified direction
     # 3. For 'both' direction, compute gradient magnitude and direction
     # 4. Return appropriate output based on direction parameter
     image = image.copy().astype(np.float32)
 
+    # OLD IMPLEMENTATION (computing first and second derivatives)
     # center = kernel_size // 2
     # sobel_x = np.zeros((kernel_size, kernel_size), dtype=np.float64)
     # sobel_y = np.zeros((kernel_size, kernel_size), dtype=np.float64)
@@ -223,17 +218,17 @@ def sobel_filter(image: np.ndarray, direction: str = 'both', kernel_size: int = 
                             [ 1,  4,  6,  4,  1]])
 
     elif kernel_size == 7:
-        sobel_x = np.array([[ 1,  2,  0, -2, -1, -2,  1],
-                            [ 4,  8,  0, -8, -4, -8,  4],
-                            [ 6, 12,  0, -12, -6, -12,  6],
-                            [ 4,  8,  0, -8, -4, -8,  4],
-                            [ 1,  2,  0, -2, -1, -2,  1]])
+        sobel_x = np.array([
+        [-3, -2, -1,  0,  1,  2,  3],
+        [-18, -12, -6,  0,  6, 12, 18],
+        [-45, -30, -15,  0, 15, 30, 45],
+        [-60, -40, -20,  0, 20, 40, 60],
+        [-45, -30, -15,  0, 15, 30, 45],
+        [-18, -12, -6,  0,  6, 12, 18],
+        [ -3, -2, -1,  0,  1,  2,  3]
+        ])
 
-        sobel_y = np.array([[-1, -4, -6, -4, -1, -4,  1],
-                            [-2, -8, -12, -8, -2, -8,  2],
-                            [ 0,  0,  0,  0,  0,  0,  0],
-                            [ 2,  8,  12,  8,  2,  8, -2],
-                            [ 1,  4,  6,  4,  1,  4, -1]])
+        sobel_y = sobel_x.T
 
     if direction == 'x':
         grad_x = convolve2d(image, sobel_x, padding_mode)

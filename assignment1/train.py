@@ -1,6 +1,5 @@
 # Elizabeth Huang
 # Last Modified: April 2, 2025
-#TODO:Third task!!
 
 import os
 import time
@@ -94,8 +93,6 @@ def train(config):
     val_psnrs = []
     val_ssims = []
     best_psnr = 0.0
-    
-    # TODO: Implement the training loop (10%)
     # Your implementation should handle the following:
     #
     # 1. Create a loop that iterates for the specified number of epochs
@@ -129,72 +126,13 @@ def train(config):
     # to understand the expected behavior and parameters.
     
     # Your code here
-    def train_one_epoch(model, dataloader, optimizer, criterion, device):
-        model.train()
-        epoch_loss = 0
-        pbar = tqdm(dataloader, desc="Training", ncols=100)
-
-        for batch in pbar:
-            if batch['error']:
-                # print(f"Skipping {batch['filename']}: {batch['error']}")
-                continue
-            hr_image = batch['hr'].to(device)
-            lr_image = batch['lr'].to(device)
-
-            optimizer.zero_grad()
-            sr_image = model(lr_image)
-            loss = criterion(sr_image, hr_image)
-            loss.backward()
-            optimizer.step()
-
-            epoch_loss += loss.item()
-            pbar.set_postfix(loss=loss.item())
-
-        return epoch_loss / len(dataloader)
-
-
-    def validate_one_epoch(model, dataloader, criterion, device, epoch, config):
-        model.eval()
-        epoch_loss = 0
-        epoch_psnr = 0
-        epoch_ssim = 0
-        pbar = tqdm(dataloader, desc=f"Validating Epoch {epoch}", ncols=100)
-
-        with torch.no_grad():
-            for i, batch in enumerate(pbar):
-                if batch['error']:
-                    continue
-
-                hr_image = batch['hr'].to(device)
-                lr_image = batch['lr'].to(device)
-
-                sr_image = model(lr_image)
-                val_loss = criterion(sr_image, hr_image)
-                epoch_loss += val_loss.item()
-
-                psnr = calculate_psnr(sr_image, hr_image)
-                ssim = calculate_ssim(sr_image, hr_image)
-                epoch_psnr += psnr
-                epoch_ssim += ssim
-
-                if i < config['val_batch_limit']:
-                    save_image(sr_image, os.path.join(config['sample_dir'], f"epoch{epoch}_batch{batch_idx}_sr.png"))
-                    save_image(lr_image, os.path.join(config['sample_dir'], f"epoch{epoch}_batch{batch_idx}_lr.png"))
-                    save_image(hr_image, os.path.join(config['sample_dir'], f"epoch{epoch}_batch{batch_idx}_hr.png"))
-
-        n = len(dataloader)
-        return epoch_loss / n, epoch_psnr / n, epoch_ssim / n
-
-
-    # Training loop
     for epoch in range(start_epoch, config['num_epochs']):
         model.train()
         epoch_losses = []
         
-        # Progress bar for training
+        # progress bar
         train_pbar = tqdm(train_dataloader, desc=f"Epoch {epoch+1}/{config['num_epochs']}")
         for batch in train_pbar:
-            # Get data
             lr_imgs = batch['lr'].to(device)
             hr_imgs = batch['hr'].to(device)
             
@@ -296,7 +234,6 @@ def train(config):
                                 align_corners=False
                             ).squeeze(0).clamp(0, 1)
                             
-                            # Save concatenated images
                             save_image(
                                 torch.cat([
                                     lr_img_upscaled,
@@ -306,7 +243,7 @@ def train(config):
                                 os.path.join(config['sample_dir'], f"epoch_{epoch+1}_sample_{i}.png")
                             )
             
-            # Calculate average validation metrics
+            #calculate average validation metrics
             val_loss /= val_count
             val_psnr /= val_count
             val_ssim /= val_count
@@ -316,7 +253,6 @@ def train(config):
             val_psnrs.append(val_psnr)
             val_ssims.append(val_ssim)
             
-            # Print epoch summary
             print(f"Epoch {epoch+1}/{config['num_epochs']} - "
                 f"Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}, "
                 f"PSNR: {val_psnr:.2f}, SSIM: {val_ssim:.4f}")
@@ -336,7 +272,7 @@ def train(config):
         else:
             # Print training-only summary
             print(f"Epoch {epoch+1}/{config['num_epochs']} - Train Loss: {train_loss:.4f}")
-            # Add placeholder values to keep arrays aligned
+            # placeholder values to keep arrays aligned
             val_losses.append(None)
             val_psnrs.append(None)
             val_ssims.append(None)

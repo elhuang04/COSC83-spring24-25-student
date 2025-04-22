@@ -1,7 +1,3 @@
-# Elizabeth Huang
-# Last Modified: April 2, 2025
-#TODO:Last task!!
-
 import os
 import glob
 import argparse
@@ -196,4 +192,4 @@ if __name__ == "__main__":
     
     test_model(config)
 
-    # python test.py --model_path checkpoints/best_model.pth --test_dir DIV2K_valid_HR --output_dir results --save_images --calculate_metrics
+    # python assignment1/test.py --model_path checkpoints/best_model.pth --test_dir DIV2K_valid_HR --output_dir results --save_images --calculate_metrics

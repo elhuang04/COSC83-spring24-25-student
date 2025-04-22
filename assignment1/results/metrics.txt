@@ -1,0 +1,5 @@
+Model: checkpoints/best_model.pth
+Scale factor: 4
+Number of test images: 100
+Average PSNR: 21.00dB
+Average SSIM: 0.4266

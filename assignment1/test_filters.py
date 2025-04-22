@@ -1,3 +1,6 @@
+# added additional tests to compare parameter variations
+# Last Modified: April 21, 2025
+
 import numpy as np
 import cv2
 import matplotlib.pyplot as plt
@@ -60,8 +63,11 @@ def test_basic_filters(image_path: str, save_path: str = None):
     # Add noise and test denoising
     print("Testing noise reduction...")
     noisy_gray = add_noise(gray, noise_type='gaussian', var=0.02)
+    noisy_saltpepper = add_noise(gray, noise_type='salt_pepper', var=0.02)
+
     denoised_mean = mean_filter(noisy_gray, kernel_size=5)
     denoised_gauss = gaussian_filter(noisy_gray, kernel_size=5, sigma=1.5)
+    denoised_gauss2 = gaussian_filter(noisy_saltpepper, kernel_size=5, sigma=1.5)
     
     # Display or save results
     fig = plt.figure(figsize=(15, 12))
@@ -123,7 +129,12 @@ def test_basic_filters(image_path: str, save_path: str = None):
     
     plt.subplot(3, 4, 12)
     plt.imshow(np.hstack([noisy_gray, denoised_gauss]), cmap='gray')
-    plt.title('Noisy vs Denoised')
+    plt.title('Noisy vs Denoised (Gaussian)')
+    plt.axis('off')
+
+    plt.subplot(3, 4, 12)
+    plt.imshow(np.hstack([noisy_saltpepper, denoised_gauss2]), cmap='gray')
+    plt.title('Noisy vs Denoised (Salt Pepper)')
     plt.axis('off')
     
     plt.tight_layout()
@@ -363,6 +374,244 @@ def test_canny(image_path: str, save_path: str = None):
     plt.close(fig)
 
 
+import cv2
+import numpy as np
+import matplotlib.pyplot as plt
+
+# Function for creating the first set of figures
+def create_figure_1(image_path: str, save_path: str = None):
+    """
+    Create the first figure with various filters applied to the image.
+    
+    Args:
+        image_path: Path to the test image
+        save_path: Path to save the result image (if None, display instead)
+    """
+    # Read image
+    image = cv2.imread(image_path)
+    image = image.copy().astype(np.float32)
+
+    if image is None:
+        raise ValueError(f"Could not read image at {image_path}")
+    
+    # Convert to RGB for display
+    image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+    
+    # Convert to grayscale for edge detection
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    
+    # Apply Mean filter with kernel sizes 3, 5, 7
+    mean3x3 = mean_filter(image_rgb, kernel_size=3)
+    mean5x5 = mean_filter(image_rgb, kernel_size=5)
+    mean7x7 = mean_filter(image_rgb, kernel_size=7)
+    
+    # Apply Gaussian filter with different sigma values
+    gauss0 = gaussian_filter(image_rgb, kernel_size=3, sigma=0.01)
+    gauss085 = gaussian_filter(image_rgb, kernel_size=3, sigma=0.85)
+    gauss10 = gaussian_filter(image_rgb, kernel_size=3, sigma=10)
+    
+    # Add Gaussian and Salt-Pepper noise
+    noisy_gaussian = add_noise(gray, noise_type='gaussian', var=0.02)
+    noisy_saltpepper = add_noise(gray, noise_type='salt_pepper', var=0.02)
+    
+    # Apply denoising using Mean and Gaussian filters
+    denoised_mean = mean_filter(noisy_gaussian, kernel_size=5)
+    denoised_gauss = gaussian_filter(noisy_gaussian, kernel_size=5, sigma=1.5)
+    denoised_gauss2 = gaussian_filter(noisy_saltpepper, kernel_size=5, sigma=1.5)
+    
+    # Apply filters with different padding
+    mean_const_padding = mean_filter(image_rgb, kernel_size=3, padding_mode="constant")
+    mean_reflect_padding = mean_filter(image_rgb,kernel_size=3,padding_mode="reflect")
+    mean_wrap_padding = mean_filter(image_rgb,kernel_size=3,padding_mode="wrap") 
+    
+    # Create the first figure with captions
+    fig = plt.figure(figsize=(18, 15))
+    
+    # Mean Filter with Kernel sizes 3, 5, 7
+    plt.subplot(4, 5, 1)
+    plt.imshow(image_rgb)
+    plt.title('Original Image')
+    plt.axis('off')
+    
+    plt.subplot(4, 5, 2)
+    plt.imshow(mean3x3.astype(np.uint8))
+    plt.title('Mean Filter 3x3')
+    plt.axis('off')
+    
+    plt.subplot(4, 5, 3)
+    plt.imshow(mean5x5.astype(np.uint8))
+    plt.title('Mean Filter 5x5')
+    plt.axis('off')
+    
+    plt.subplot(4, 5, 4)
+    plt.imshow(mean7x7.astype(np.uint8))
+    plt.title('Mean Filter 7x7')
+    plt.axis('off')
+    
+    # Gaussian Filter with different sigma values
+    plt.subplot(4, 5, 5)
+    plt.imshow(gauss0.astype(np.uint8))
+    plt.title('Gaussian Filter (σ=0)')
+    plt.axis('off')
+    
+    plt.subplot(4, 5, 6)
+    plt.imshow(gauss085.astype(np.uint8))
+    plt.title('Gaussian Filter (σ=0.85)')
+    plt.axis('off')
+    
+    plt.subplot(4, 5, 7)
+    plt.imshow(gauss10.astype(np.uint8))
+    plt.title('Gaussian Filter (σ=10)')
+    plt.axis('off')
+    
+    # Noisy Image and Denoised Images
+    plt.subplot(4, 5, 8)
+    plt.imshow(np.hstack([noisy_gaussian, denoised_gauss]), cmap='gray')
+    plt.title('Noisy vs Denoised (Gaussian)')
+    plt.axis('off')
+    
+    plt.subplot(4, 5, 9)
+    plt.imshow(np.hstack([noisy_saltpepper, denoised_gauss2]), cmap='gray')
+    plt.title('Noisy vs Denoised (Salt & Pepper)')
+    plt.axis('off')
+    
+    # Filters with Padding Types
+    plt.subplot(4, 5, 10)
+    plt.imshow(mean_const_padding.astype(np.uint8))
+    plt.title('Mean Filter (Constant Padding)')
+    plt.axis('off')
+    
+    plt.subplot(4, 5, 11)
+    plt.imshow(mean_reflect_padding.astype(np.uint8))
+    plt.title('Mean Filter (Reflect Padding)')
+    plt.axis('off')
+    
+    plt.subplot(4, 5, 12)
+    plt.imshow(mean_wrap_padding.astype(np.uint8))
+    plt.title('Mean Filter (Wrap Padding)')
+    plt.axis('off')
+
+    plt.tight_layout()
+    
+    if save_path:
+        plt.savefig(save_path, dpi=300)
+        print(f"Results saved to {save_path}")
+    else:
+        plt.show()
+
+# Function for creating the second set of figures
+def create_figure_2(image_path: str, save_path: str = None):
+    """
+    Create the second figure with Sobel and Laplacian filters applied to the image.
+    
+    Args:
+        image_path: Path to the test image
+        save_path: Path to save the result image (if None, display instead)
+    """
+    # Read image
+    image = cv2.imread(image_path)
+    image = image.copy().astype(np.float32)
+
+    if image is None:
+        raise ValueError(f"Could not read image at {image_path}")
+    
+    # Convert to grayscale for edge detection
+    gray = cv2.cvtColor(image, cv2.COLOR_RGB2GRAY)
+    
+    # Apply Sobel filter with different kernel sizes (3, 5, 7)
+    sobel3x3, _ = sobel_filter(gray, direction='both', kernel_size=3)
+    sobel_mag, _ = sobel_filter(gray, direction='both')
+    sobel5x5, _ = sobel_filter(gray, direction='both', kernel_size=5)
+    sobel7x7, _ = sobel_filter(gray, direction='both', kernel_size=7)
+    
+    # Add noise to the image
+    noisy_gaussian = add_noise(gray, noise_type='gaussian', var=0.02)
+    noisy_saltpepper = add_noise(gray, noise_type='salt_pepper', var=0.02)
+    
+    # Apply Laplacian filter and Sobel filter to noisy images
+    laplacian_std = laplacian_filter(noisy_gaussian, kernel_type='standard')
+    laplacian_diag = laplacian_filter(noisy_gaussian, kernel_type='diagonal')
+    
+    # Apply Sobel filter to noisy images
+    sobel_noisy_gaussian, _ = sobel_filter(noisy_gaussian, direction='both')
+    sobel_noisy_saltpepper, _ = sobel_filter(noisy_saltpepper, direction='both')
+    
+    # Filters with different padding for Sobel
+    sobel_const_padding, _ = sobel_filter(gray, 'both', 3, 'constant')
+    sobel_reflect_padding, _ = sobel_filter(gray, 'both', 3, 'reflect')
+    sobel_wrap_padding, _ = sobel_filter(gray, 'both', 3, 'wrap')
+    
+    # Create the second figure with captions
+    fig = plt.figure(figsize=(18, 15))
+    
+    # Sobel filter with kernel sizes 3, 5, 7
+    plt.subplot(4, 5, 1)
+    plt.imshow(gray, cmap='gray')
+    plt.title('Original Image')
+    plt.axis('off')
+    
+    plt.subplot(4, 5, 2)
+    plt.imshow(sobel3x3, cmap='gray')
+    plt.title('Sobel Filter (3x3)')
+    plt.axis('off')
+    
+    plt.subplot(4, 5, 3)
+    plt.imshow(sobel5x5, cmap='gray')
+    plt.title('Sobel Filter (5x5)')
+    plt.axis('off')
+    
+    plt.subplot(4, 5, 4)
+    plt.imshow(sobel7x7, cmap='gray')
+    plt.title('Sobel Filter (7x7)')
+    plt.axis('off')
+    
+    # Noisy Image and Denoised Images (Sobel and Laplacian)
+    plt.subplot(4, 5, 5)
+    plt.imshow(np.hstack([noisy_gaussian, laplacian_std]), cmap='gray')
+    plt.title('Noisy vs Laplacian (Gaussian Noise)')
+    plt.axis('off')
+    
+    plt.subplot(4, 5, 6)
+    plt.imshow(np.hstack([noisy_saltpepper, laplacian_diag]), cmap='gray')
+    plt.title('Noisy vs Laplacian (Salt & Pepper)')
+    plt.axis('off')
+    
+    # Noisy Image and Filtered Images (Sobel)
+    plt.subplot(4, 5, 7)
+    plt.imshow(np.hstack([noisy_gaussian, sobel_noisy_gaussian]), cmap='gray')
+    plt.title('Noisy vs Sobel (Gaussian Noise)')
+    plt.axis('off')
+    
+    plt.subplot(4, 5, 8)
+    plt.imshow(np.hstack([noisy_saltpepper, sobel_noisy_saltpepper]), cmap='gray')
+    plt.title('Noisy vs Sobel (Salt & Pepper)')
+    plt.axis('off')
+    
+    # Filters with Padding Types
+    plt.subplot(4, 5, 9)
+    plt.imshow(sobel_const_padding, cmap='gray')
+    plt.title('Sobel Filter (Constant Padding)')
+    plt.axis('off')
+    
+    plt.subplot(4, 5, 10)
+    plt.imshow(sobel_reflect_padding, cmap='gray')
+    plt.title('Sobel Filter (Reflect Padding)')
+    plt.axis('off')
+    
+    plt.subplot(4, 5, 11)
+    plt.imshow(sobel_wrap_padding, cmap='gray')
+    plt.title('Sobel Filter (Wrap Padding)')
+    plt.axis('off')
+    
+    plt.tight_layout()
+    
+    if save_path:
+        plt.savefig(save_path, dpi=300)
+        print(f"Results saved to {save_path}")
+    else:
+        plt.show()
+
+
 def test_all(image_path: str, output_dir: str = "filter_results"):
     """
     Run all tests on the given image.
@@ -395,8 +644,16 @@ def test_all(image_path: str, output_dir: str = "filter_results"):
         save_path=os.path.join(output_dir, f"{base_name}_canny_comparison.png")
     )
     
+    create_figure_1(
+        image_path,
+        save_path=os.path.join(output_dir, f"{base_name}_fig1.png")
+    )
+    
+    create_figure_2(image_path,
+        save_path=os.path.join(output_dir, f"{base_name}_fig2.png")
+    )
+    
     print(f"All tests completed. Results saved to {output_dir}")
-
 
 if __name__ == "__main__":
     # Replace with the path to your test image
@@ -406,10 +663,12 @@ if __name__ == "__main__":
     #test_all(test_image_path)
 
     test_image_paths = [
-    "assignment1/example_images/test.jpg",
-    "assignment1/example_images/50px.jpg",
+    # "assignment1/example_images/test.jpg",
     "assignment1/example_images/100px.png",
-    "assignment1/example_images/500px.jpg",
+    # "assignment1/example_images/500px.jpg",
+    # "assignment1/example_images/Bliss_(Windows_XP).png",
+    # "assignment1/example_images/download.jpeg",
+    # "assignment1/example_images/Rainbow-Checkerboard-23.jpg",
     ]
 
     for path in test_image_paths:

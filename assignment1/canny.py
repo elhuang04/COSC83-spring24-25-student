@@ -1,7 +1,8 @@
+# Elizabeth Huang
+# Last Modified: April 21, 2025
+
 import numpy as np
 from filtering import gaussian_filter, sobel_filter
-
-import cv2
 
 #10%bonus
 def canny_edge_detector(image: np.ndarray, low_threshold: float = 0.05, high_threshold: float = 0.15, 
