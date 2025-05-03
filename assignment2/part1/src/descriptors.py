@@ -19,21 +19,43 @@ class FeatureDescriptor:
         """
         Initialize the descriptor object based on the type.
         """
-        # TODO: Initialize SIFT or SURF descriptor based on self.descriptor_type
+        # Initialize SIFT or SURF descriptor based on self.descriptor_type
         # HINT: Use cv2.SIFT_create() or cv2.xfeatures2d.SURF_create()
         
         if self.descriptor_type == 'SIFT':
             # Extract parameters from self.params or use default values
-            
-            # Your implementation here
-            self.descriptor = None
+            nfeatures = self.params.get('nfeatures', 100)
+            nOctaveLayers = self.params.get('nOctaveLayers', 3)
+            contrastThreshold = self.params.get('contrastThreshold', 0.04)
+            edgeThreshold = self.params.get('edgeThreshold', 10)
+            sigma = self.params.get('sigma', 1.6)
+
+            # Initialize the SIFT descriptor
+            self.descriptor = cv2.SIFT_create(
+                nfeatures=nfeatures,
+                nOctaveLayers=nOctaveLayers,
+                contrastThreshold=contrastThreshold,
+                edgeThreshold=edgeThreshold,
+                sigma=sigma
+            )
             
         elif self.descriptor_type == 'SURF':
             # Extract parameters from self.params or use default values
-            
-            # Your implementation here
-            self.descriptor = None
-            
+            hessianThreshold = self.params.get('hessianThreshold', 100)
+            nOctaves = self.params.get('nOctaves', 4)
+            nOctaveLayers = self.params.get('nOctaveLayers', 3)
+            extended = self.params.get('extended', False)
+            upright = self.params.get('upright', False)
+
+            # Initialize the SURF descriptor
+            self.descriptor = cv2.xfeatures2d.SURF_create(
+                hessianThreshold=hessianThreshold,
+                nOctaves=nOctaves,
+                nOctaveLayers=nOctaveLayers,
+                extended=extended,
+                upright=upright
+            )
+
         else:
             raise ValueError(f"Unsupported descriptor type: {self.descriptor_type}")
     
@@ -52,12 +74,12 @@ class FeatureDescriptor:
         if len(image.shape) > 2:
             image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         
-        # TODO: Use the descriptor to detect keypoints and compute descriptors
+        # Use the descriptor to detect keypoints and compute descriptors
         # HINT: Use the detectAndCompute method
         
         # Your implementation here
-        keypoints, descriptors = None, None
-        
+        keypoints, descriptors = self.descriptor.detectAndCompute(image, mask)
+
         return keypoints, descriptors
     
     def compute_for_keypoints(self, image, keypoints):
@@ -75,11 +97,11 @@ class FeatureDescriptor:
         if len(image.shape) > 2:
             image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
         
-        # TODO: Compute descriptors for the provided keypoints
+        # Compute descriptors for the provided keypoints
         # HINT: Use the compute method
         
         # Your implementation here
-        keypoints, descriptors = None, None
+        keypoints, descriptors = self.descriptor.compute(image, keypoints)
         
         return keypoints, descriptors
 
@@ -104,10 +126,20 @@ class HarrisKeypointExtractor:
         Returns:
             list: List of cv2.KeyPoint objects
         """
-        # TODO: Detect Harris corners and convert them to cv2.KeyPoint objects
+        # Detect Harris corners and convert them to cv2.KeyPoint objects
         # HINT: Use the harris_detector to find corners, then convert coordinates to KeyPoints
         
         # Your implementation here
+        corners, response = self.harris_detector.detect_corners(image)
+        # harris_response = cv2.dilate(response, None)
+        harris_response = response
+        threshold = 0.01 * harris_response.max()
+
         keypoints = []
-        
+        for y in range(harris_response.shape[0]):
+            for x in range(harris_response.shape[1]):
+                if harris_response[y, x] > threshold:
+                    if mask is None or mask[y, x]:
+                        keypoints.append(cv2.KeyPoint(x=float(x), y=float(y), size=3.0))
+
         return keypoints

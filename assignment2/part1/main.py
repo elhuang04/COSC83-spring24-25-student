@@ -49,9 +49,10 @@ def process_image_pair(img1_path, img2_path, harris_detector, descriptor_type, r
     # Step 1: Harris Corner Detection
     print(f"Processing pair: {pair_name}")
     print("Step 1: Harris Corner Detection")
-    
     corners1, response1 = harris_detector.detect_corners(img1)
     corners2, response2 = harris_detector.detect_corners(img2)
+
+    print("CORNERS",corners1, "RESPONSE", response1)
     
     # Visualize Harris corners
     corners_vis1 = visualize_corners(img1, corners1)
@@ -74,11 +75,17 @@ def process_image_pair(img1_path, img2_path, harris_detector, descriptor_type, r
     keypoint_extractor = HarrisKeypointExtractor(harris_detector)
     keypoints1 = keypoint_extractor.detect(img1)
     keypoints2 = keypoint_extractor.detect(img2)
+
+    
+    # print(keypoints1)
     
     # Compute descriptors
     descriptor = FeatureDescriptor(descriptor_type=descriptor_type)
     keypoints1, descriptors1 = descriptor.compute_for_keypoints(img1, keypoints1)
     keypoints2, descriptors2 = descriptor.compute_for_keypoints(img2, keypoints2)
+
+    print("DESCRIPTOR", descriptor)
+    print("DESCRIPTORS 1", descriptors1)
     
     # Visualize keypoints
     keypoints_vis1 = visualize_keypoints(img1, keypoints1)
@@ -93,6 +100,9 @@ def process_image_pair(img1_path, img2_path, harris_detector, descriptor_type, r
     # Match descriptors
     matcher = FeatureMatcher(ratio_threshold=0.75)
     matches = matcher.match_descriptors(descriptors1, descriptors2)
+    
+    print("MATCHER", matcher)
+    print("MATCHER", matches)
     
     # Visualize initial matches
     initial_matches_vis = visualize_matches(img1, keypoints1, img2, keypoints2, matches)
