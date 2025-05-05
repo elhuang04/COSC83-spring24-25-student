@@ -8,6 +8,8 @@ from pathlib import Path
 from src.harris import HarrisDetector
 from src.descriptors import FeatureDescriptor, HarrisKeypointExtractor
 from src.matching import FeatureMatcher, RANSAC
+from src.alignment import warp_and_align_images
+
 from src.visualization import (
     visualize_corners, visualize_keypoints, visualize_matches,
     visualize_harris_response, create_match_ranking_visualization
@@ -51,8 +53,7 @@ def process_image_pair(img1_path, img2_path, harris_detector, descriptor_type, r
     print("Step 1: Harris Corner Detection")
     corners1, response1 = harris_detector.detect_corners(img1)
     corners2, response2 = harris_detector.detect_corners(img2)
-
-    print("CORNERS",corners1, "RESPONSE", response1)
+    # print("CORNERS",corners1, "RESPONSE", response1)
     
     # Visualize Harris corners
     corners_vis1 = visualize_corners(img1, corners1)
@@ -75,17 +76,14 @@ def process_image_pair(img1_path, img2_path, harris_detector, descriptor_type, r
     keypoint_extractor = HarrisKeypointExtractor(harris_detector)
     keypoints1 = keypoint_extractor.detect(img1)
     keypoints2 = keypoint_extractor.detect(img2)
-
-    
     # print(keypoints1)
     
     # Compute descriptors
     descriptor = FeatureDescriptor(descriptor_type=descriptor_type)
     keypoints1, descriptors1 = descriptor.compute_for_keypoints(img1, keypoints1)
     keypoints2, descriptors2 = descriptor.compute_for_keypoints(img2, keypoints2)
-
-    print("DESCRIPTOR", descriptor)
-    print("DESCRIPTORS 1", descriptors1)
+    # print("DESCRIPTOR", descriptor)
+    # print("DESCRIPTORS 1", descriptors1)
     
     # Visualize keypoints
     keypoints_vis1 = visualize_keypoints(img1, keypoints1)
@@ -100,9 +98,8 @@ def process_image_pair(img1_path, img2_path, harris_detector, descriptor_type, r
     # Match descriptors
     matcher = FeatureMatcher(ratio_threshold=0.75)
     matches = matcher.match_descriptors(descriptors1, descriptors2)
-    
-    print("MATCHER", matcher)
-    print("MATCHER", matches)
+    # print("MATCHER", matcher)
+    # print("MATCHER", matches)
     
     # Visualize initial matches
     initial_matches_vis = visualize_matches(img1, keypoints1, img2, keypoints2, matches)
@@ -128,22 +125,68 @@ def process_image_pair(img1_path, img2_path, harris_detector, descriptor_type, r
         
         print(f"Matches: {len(matches)}, Inliers: {inlier_count}, Ratio: {inlier_ratio:.2f}, Quality: {quality_score:.4f}")
         
-        # Return results
-        return {
-            'pair_name': pair_name,
-            'corners1': corners1,
-            'corners2': corners2,
-            'keypoints1': keypoints1,
-            'keypoints2': keypoints2,
-            'matches': matches,
-            'inliers': inliers,
-            'homography': H,
-            'match_count': len(matches),
-            'inlier_count': inlier_count,
-            'inlier_ratio': inlier_ratio,
-            'quality_score': quality_score,
-            'matches_vis': ransac_matches_vis
-        }
+        # Step 4: Image Alignment using Homography (BONUS)
+        print("Step 4: Image Alignment using Homography")
+
+        if H is not None:
+            #warp
+            aligned_img1 = cv2.warpPerspective(img1, H, (img2.shape[1], img2.shape[0]))
+            blend = cv2.addWeighted(aligned_img1, 0.5, img2, 0.5, 0)
+
+            # blend
+            cv2.imwrite(os.path.join(pair_dir, "aligned_img1.jpg"), aligned_img1)
+            cv2.imwrite(os.path.join(pair_dir, "alignment_blend.jpg"), blend)
+
+            #visualization
+            fig, ax = plt.subplots(1, 3, figsize=(18, 6))
+            ax[0].imshow(cv2.cvtColor(img1, cv2.COLOR_BGR2RGB))
+            ax[0].set_title("Original Image 1")
+            ax[1].imshow(cv2.cvtColor(img2, cv2.COLOR_BGR2RGB))
+            ax[1].set_title("Original Image 2")
+            ax[2].imshow(cv2.cvtColor(blend, cv2.COLOR_BGR2RGB))
+            ax[2].set_title("Aligned Blend")
+            for a in ax:
+                a.axis('off')
+            plt.tight_layout()
+            plt.savefig(os.path.join(pair_dir, "alignment_visualization.png"))
+            plt.close()
+
+            # Return results
+            return {
+                'pair_name': pair_name,
+                'corners1': corners1,
+                'corners2': corners2,
+                'keypoints1': keypoints1,
+                'keypoints2': keypoints2,
+                'matches': matches,
+                'inliers': inliers,
+                'homography': H,
+                'match_count': len(matches),
+                'inlier_count': inlier_count,
+                'inlier_ratio': inlier_ratio,
+                'quality_score': quality_score,
+                'matches_vis': ransac_matches_vis,
+                'aligned_img': aligned_img1,
+                'alignment_blend': blend,
+            }
+        else: 
+            return {
+                    'pair_name': pair_name,
+                    'corners1': corners1,
+                    'corners2': corners2,
+                    'keypoints1': keypoints1,
+                    'keypoints2': keypoints2,
+                    'matches': matches,
+                    'inliers': inliers,
+                    'homography': H,
+                    'match_count': len(matches),
+                    'inlier_count': inlier_count,
+                    'inlier_ratio': inlier_ratio,
+                    'quality_score': quality_score,
+                    'matches_vis': ransac_matches_vis,
+                    'aligned_img': None,
+                    'alignment_blend': None,
+                }
     else:
         print(f"Not enough matches for RANSAC: {len(matches)}")
         return {
@@ -159,23 +202,19 @@ def process_image_pair(img1_path, img2_path, harris_detector, descriptor_type, r
             'inlier_count': 0,
             'inlier_ratio': 0,
             'quality_score': 0,
-            'matches_vis': initial_matches_vis
+            'matches_vis': initial_matches_vis,
+            'aligned_img': None,
+            'alignment_blend': None
         }
 
-
-def main():
-    # Create directories
-    results_dir = "results"
+def run_pipeline_on_directory(data_dir, results_dir, descriptor_type='SIFT'):
+    # Ensure output directory
     ensure_dir(results_dir)
-    
-    # Directory for image pairs
-    data_dir = "data/image_pairs"
     
     # Get image pairs
     image_files = sorted([f for f in os.listdir(data_dir) if f.endswith(('.jpg', '.png', '.jpeg'))])
-    print(f"Found {len(image_files)} images in {data_dir}")
-    # Create pairs (for this example, we're assuming consecutive images form a pair)
-    # In a real assignment, you might have a specific pairing scheme
+    print(f"\nFound {len(image_files)} images in {data_dir}")
+    
     image_pairs = []
     for i in range(0, len(image_files) - 1, 2):
         if i + 1 < len(image_files):
@@ -187,9 +226,6 @@ def main():
     # Initialize Harris detector
     harris_detector = HarrisDetector(k=0.04, window_size=3, threshold=0.01)
     
-    # Choose descriptor type ('SIFT' or 'SURF')
-    descriptor_type = 'SIFT'
-    
     # Process each pair
     pair_results = []
     for img1_path, img2_path in image_pairs:
@@ -198,15 +234,12 @@ def main():
     
     # Create ranking visualization
     if pair_results:
-        # Extract quality scores and matching visualizations
         quality_scores = [result['quality_score'] for result in pair_results]
         matches_vis = [(None, None, result['matches_vis']) for result in pair_results]
         
-        # Create ranking visualization
         ranking_vis = create_match_ranking_visualization(matches_vis, quality_scores)
         cv2.imwrite(os.path.join(results_dir, "ranking_visualization.jpg"), ranking_vis)
         
-        # Save ranking data
         ranking_data = []
         for result in pair_results:
             ranking_data.append({
@@ -217,16 +250,17 @@ def main():
                 'quality_score': result['quality_score']
             })
         
-        # Sort by quality score
         ranking_data = sorted(ranking_data, key=lambda x: x['quality_score'], reverse=True)
         
-        # Print ranking
         print("\n--- Image Pair Ranking ---")
         for i, data in enumerate(ranking_data):
             print(f"{i+1}. {data['pair_name']}: Quality={data['quality_score']:.4f}, "
                   f"Inliers={data['inlier_count']}/{data['match_count']}, "
                   f"Ratio={data['inlier_ratio']:.2f}")
 
+def main():
+    run_pipeline_on_directory("data/image_pairs", "results/image_pairs")
+    run_pipeline_on_directory("data/dataset", "results/dataset")
 
 if __name__ == "__main__":
     main()

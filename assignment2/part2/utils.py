@@ -82,3 +82,28 @@ def visualize_predictions(img1_set, img2_set, labels, predictions, n=5):
     plt.tight_layout()
     plt.savefig('pair_predictions.png')
     plt.close()
+
+def threshold_triplet_loss(anchor, positive, negative, margin):
+    """
+    Apply a threshold-based criterion to triplet loss, ensuring that the anchor is closer to
+    the positive example than the negative example by at least the margin.
+    
+    Args:
+        anchor: The anchor embedding tensor
+        positive: The positive embedding tensor
+        negative: The negative embedding tensor
+        margin: The margin value used to determine when the triplet is valid
+    
+    Returns:
+        Binary tensor (1 = valid triplet, 0 = invalid triplet) based on the threshold condition
+    """
+    # Compute the pairwise distance between anchor-positive and anchor-negative pairs
+    pos_dist = torch.norm(anchor - positive, p=2, dim=1)
+    neg_dist = torch.norm(anchor - negative, p=2, dim=1)
+    
+    # Calculate the difference between the positive and negative distances
+    dist_diff = pos_dist - neg_dist + margin
+    
+    # Apply threshold: If dist_diff > 0, we consider it a valid triplet
+    # Return binary tensor: 1 for valid triplet, 0 for invalid triplet
+    return (dist_diff < 0).float()

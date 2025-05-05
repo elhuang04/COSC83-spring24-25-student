@@ -315,7 +315,7 @@ Your assignment will be evaluated based on:
   - Analysis of matching performance across different image pairs
   - Discussion of limitations and potential improvements
   - All experimental results with appropriate figures and tables
-
+  
 ## Resources
 - Lecture notes on feature detection and matching
 - [Aggregating Deep Convolutional Features for Image Retrieval](https://www.cv-foundation.org/openaccess/content_iccv_2015/papers/Babenko_Aggregating_Local_Deep_ICCV_2015_paper.pdf)

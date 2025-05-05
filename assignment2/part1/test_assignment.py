@@ -8,6 +8,7 @@ from pathlib import Path
 from src.harris import HarrisDetector
 from src.descriptors import FeatureDescriptor, HarrisKeypointExtractor
 from src.matching import FeatureMatcher, RANSAC
+
 from utils.image_utils import load_image, resize_image
 
 def test_harris():

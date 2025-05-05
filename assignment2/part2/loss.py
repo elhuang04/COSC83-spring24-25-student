@@ -34,3 +34,14 @@ class ContrastiveLoss(nn.Module):
                                      (label) * torch.pow(torch.clamp(self.margin - euclidean_distance, min=0.0), 2))
         
         return loss_contrastive
+
+class TripletLoss(nn.Module):
+    def __init__(self, margin=1.0):
+        super(TripletLoss, self).__init__()
+        self.margin = margin
+
+    def forward(self, anchor, positive, negative):
+        pos_dist = nn.functional.pairwise_distance(anchor, positive)
+        neg_dist = nn.functional.pairwise_distance(anchor, negative)
+        losses = torch.clamp(pos_dist - neg_dist + self.margin, min=0.0)
+        return losses.mean()
