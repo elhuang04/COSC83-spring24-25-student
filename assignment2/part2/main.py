@@ -261,6 +261,10 @@ def evaluate(args, split, data_loader, siamese_net, visualize=False):
                     # Forward pass for triplet loss
                     out_anchor, out_pos, out_neg = siamese_net.forward_triplet(anchor, positive, negative)
                     output_labels = threshold_triplet_loss(out_anchor, out_pos, out_neg, args.margin)
+
+                    # Only take the corresponding labels for the reduced triplet batch
+                    labels = torch.ones_like(output_labels)
+
                 else:
                     continue  # Skip this batch if we can't create valid triplets
             else:
