@@ -41,7 +41,7 @@ def threshold_contrastive_loss(input1, input2, m):
     return (dist < threshold).float().view(-1, 1)
 
 
-def visualize_predictions(img1_set, img2_set, labels, predictions, n=5):
+def visualize_predictions(img1_set, img2_set, labels, predictions, n=5, epoch = None):
     """
     TODO: Implement visualization function to display pairs of faces and model predictions
     
@@ -80,7 +80,7 @@ def visualize_predictions(img1_set, img2_set, labels, predictions, n=5):
         plt.axis('off')
     
     plt.tight_layout()
-    plt.savefig('pair_predictions.png')
+    plt.savefig(f'pair_predictions_{epoch}.png')
     plt.close()
 
 def threshold_triplet_loss(anchor, positive, negative, margin):

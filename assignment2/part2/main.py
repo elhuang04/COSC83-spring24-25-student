@@ -232,7 +232,7 @@ def train(args):
     return siamese_net
 
 
-def evaluate(args, split, data_loader, siamese_net, visualize=False):
+def evaluate(args, split, data_loader, siamese_net, visualize=False, epoch=None):
     """
     Evaluate the Siamese network
     
@@ -323,7 +323,8 @@ def evaluate(args, split, data_loader, siamese_net, visualize=False):
             torch.stack(sample_imgs1),
             torch.stack(sample_imgs2),
             torch.stack(all_labels),
-            torch.stack(all_preds)
+            torch.stack(all_preds),
+            epoch = epoch
         )
     
     # Return model to training mode
@@ -392,7 +393,7 @@ def evaluate_all_checkpoints(args, loss_type):
     test_dataset = FeatureMatchingDataset(args.data_dir, args.train_file, split="test", transform=default_transform)
     half_len = len(test_dataset) // 2
     validation_subset = torch.utils.data.Subset(test_dataset, range(half_len))
-    val_loader = torch.utils.data.DataLoader(validation_subset, batch_size=BATCH_SIZE, shuffle=False)
+    val_loader = torch.utils.data.DataLoader(validation_subset, batch_size=BATCH_SIZE, shuffle=True)
 
     # Find all relevant checkpoints
     pattern = re.compile(f"checkpoint_epoch_(\\d+)_({loss_type})\\.pth")
@@ -421,22 +422,22 @@ def evaluate_all_checkpoints(args, loss_type):
         if args.cuda and torch.cuda.is_available():
             model = model.cuda()
         print(f"Evaluating checkpoint: {ckpt_file}")
-        acc = evaluate(args, "val", val_loader, model, visualize=True)
+        acc = evaluate(args, "test", val_loader, model, visualize=True, epoch=epoch)
         epochs.append(epoch)
         accuracies.append(acc)
 
-    # Plot accuracy vs epoch
-    plt.figure(figsize=(10, 5))
-    plt.plot(epochs, accuracies, marker='o')
-    plt.xlabel("Epoch")
-    plt.ylabel("Validation Accuracy (%)")
-    plt.title(f"Accuracy over Epochs - {loss_type.capitalize()} Loss")
-    plt.grid(True)
-    plt.tight_layout()
-    plot_path = f"val_accuracy_curve_{loss_type}.png"
-    plt.savefig(plot_path)
-    plt.close()
-    print(f"Saved validation accuracy plot to {plot_path}")
+        # Plot accuracy vs epoch
+        plt.figure(figsize=(10, 5))
+        plt.plot(epochs, accuracies, marker='o')
+        plt.xlabel("Epoch")
+        plt.ylabel("Validation Accuracy (%)")
+        plt.title(f"Accuracy over Epochs - {loss_type.capitalize()} Loss")
+        plt.grid(True)
+        plt.tight_layout()
+        plot_path = f"val_accuracy_curve_{loss_type}_{epoch}.png"
+        plt.savefig(plot_path)
+        plt.close()
+        print(f"Saved validation accuracy plot to {plot_path}")
 
 
 def main():
@@ -479,7 +480,7 @@ def main():
     #     siamese_net = train(args)
     #     test(args, siamese_net)
 
-    for loss_type in ['bce', 'contrastive', 'triplet']:
+    for loss_type in ['contrastive', 'triplet']:
         evaluate_all_checkpoints(args, loss_type)
 
 
