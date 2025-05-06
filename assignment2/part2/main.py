@@ -9,6 +9,10 @@ from loss import ContrastiveLoss, TripletLoss
 from utils import threshold_sigmoid, threshold_contrastive_loss, visualize_predictions, threshold_triplet_loss
 from tqdm import tqdm
 
+# to handle resume training from last checkpoint
+import os
+import re
+
 # Hyper Parameters
 BATCH_SIZE = 10
 NUM_EPOCHS = 20
@@ -87,9 +91,27 @@ def train(args):
     # ======================================================================
     
     # YOUR CODE HERE
+    checkpoint_pattern = re.compile(f"checkpoint_epoch_(\\d+)_({loss_type})\\.pth")
+    latest_epoch = 0
+    latest_ckpt_path = None
+
+    for filename in os.listdir("."):
+        match = checkpoint_pattern.match(filename)
+        if match:
+            epoch_num = int(match.group(1))
+            if epoch_num > latest_epoch:
+                latest_epoch = epoch_num
+                latest_ckpt_path = filename
+
+    # If a checkpoint exists, load it
+    if latest_ckpt_path:
+        print(f"Resuming from checkpoint: {latest_ckpt_path}")
+        siamese_net.load_state_dict(torch.load(latest_ckpt_path))
+    else:
+        print("No previous checkpoint found. Starting from scratch.")
 
     # 1. Loop through all epochs
-    for epoch in range(num_epochs):
+    for epoch in range(latest_epoch, num_epochs):
         siamese_net.train()
         epoch_contra_loss = 0.0  # Track loss for contrastive loss
         epoch_bce_loss = 0.0  # Track loss for BCE loss
@@ -353,6 +375,70 @@ def test(args, siamese_net=None):
     return test_acc
 
 
+import os
+import re
+
+def evaluate_all_checkpoints(args, loss_type):
+    """
+    Evaluates all checkpoint .pth files for a given loss type and plots accuracy vs epoch.
+    """
+    import torchvision.transforms as transforms
+    default_transform = transforms.Compose([
+        transforms.Resize((256, 256)),
+        transforms.ToTensor(),
+    ])
+
+    # Load validation subset of the test data
+    test_dataset = FeatureMatchingDataset(args.data_dir, args.train_file, split="test", transform=default_transform)
+    half_len = len(test_dataset) // 2
+    validation_subset = torch.utils.data.Subset(test_dataset, range(half_len))
+    val_loader = torch.utils.data.DataLoader(validation_subset, batch_size=BATCH_SIZE, shuffle=False)
+
+    # Find all relevant checkpoints
+    pattern = re.compile(f"checkpoint_epoch_(\\d+)_({loss_type})\\.pth")
+    checkpoints = []
+    for filename in os.listdir("."):
+        match = pattern.match(filename)
+        if match:
+            epoch = int(match.group(1))
+            checkpoints.append((epoch, filename))
+
+    if not checkpoints:
+        print(f"No checkpoints found for loss type '{loss_type}'")
+        return
+
+    # Sort by epoch
+    checkpoints.sort()
+
+    epochs = []
+    accuracies = []
+
+    for epoch, ckpt_file in checkpoints:
+        # Load model
+        model = SiameseNetwork(contra_loss=(loss_type == 'contrastive'),
+                               triplet_loss=(loss_type == 'triplet'))
+        model.load_state_dict(torch.load(ckpt_file))
+        if args.cuda and torch.cuda.is_available():
+            model = model.cuda()
+        print(f"Evaluating checkpoint: {ckpt_file}")
+        acc = evaluate(args, "val", val_loader, model, visualize=True)
+        epochs.append(epoch)
+        accuracies.append(acc)
+
+    # Plot accuracy vs epoch
+    plt.figure(figsize=(10, 5))
+    plt.plot(epochs, accuracies, marker='o')
+    plt.xlabel("Epoch")
+    plt.ylabel("Validation Accuracy (%)")
+    plt.title(f"Accuracy over Epochs - {loss_type.capitalize()} Loss")
+    plt.grid(True)
+    plt.tight_layout()
+    plot_path = f"val_accuracy_curve_{loss_type}.png"
+    plt.savefig(plot_path)
+    plt.close()
+    print(f"Saved validation accuracy plot to {plot_path}")
+
+
 def main():
     """
     Main function
@@ -383,15 +469,18 @@ def main():
     
     args = parser.parse_args()
     
-    print(f"Running with arguments: {args}")
+    # print(f"Running with arguments: {args}")
     
-    if args.action == "train":
-        train(args)
-    elif args.action == "test":
-        test(args)
-    elif args.action == 'train_test':
-        siamese_net = train(args)
-        test(args, siamese_net)
+    # if args.action == "train":
+    #     train(args)
+    # elif args.action == "test":
+    #     test(args)
+    # elif args.action == 'train_test':
+    #     siamese_net = train(args)
+    #     test(args, siamese_net)
+
+    for loss_type in ['bce', 'contrastive', 'triplet']:
+        evaluate_all_checkpoints(args, loss_type)
 
 
 if __name__ == '__main__':
