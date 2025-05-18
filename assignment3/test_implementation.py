@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import torchvision
 from PIL import Image, ImageDraw
+import math
 
 # Import your modules
 from src.faster_rcnn import (
@@ -61,8 +62,8 @@ def test_boxes_to_transformation_targets():
     assert torch.allclose(targets[0, :2], torch.tensor([0.2, 0.2]), atol=1e-4), f"Target mismatch: {targets[0, :2]}"
     assert torch.allclose(targets[0, 2:], torch.tensor([0.0, 0.0]), atol=1e-4), f"Target mismatch: {targets[0, 2:]}"
     
-    # Check targets for second anchor: [0, 0, log(2), log(2)]
-    assert torch.allclose(targets[1, :2], torch.tensor([0.0, 0.0]), atol=1e-4), f"Target mismatch: {targets[1, :2]}"
+    # Check targets for second anchor: [0.5, 0.5, log(2), log(2)]
+    assert torch.allclose(targets[1, :2], torch.tensor([0.5, 0.5]), atol=1e-4), f"Target mismatch: {targets[1, :2]}"
     assert torch.allclose(targets[1, 2:], torch.tensor([0.6931, 0.6931]), atol=1e-4), f"Target mismatch: {targets[1, 2:]}"
     
     print("Transformation targets test passed!\n")
@@ -79,7 +80,7 @@ def test_apply_regression_pred():
     # Create transformation predictions [dx, dy, dw, dh]
     transform_pred = torch.tensor([
         [[0.2, 0.2, 0.0, 0.0]],  # Shift but no scale
-        [[0.0, 0.0, 0.6931, 0.6931]]  # No shift but scale by 2
+        [[0.0, 0.0, math.log(2), math.log(2)]]  # No shift but scale by 2
     ], dtype=torch.float32)
     
     pred_boxes = apply_regression_pred_to_anchors_or_proposals(transform_pred, anchors)
