@@ -485,6 +485,15 @@ class ROIHead(nn.Module):
 
          # 4. Return labels and matched GT boxes for all proposals
         return labels, matched_gt_boxes_for_proposals  # Replace with your implementation
+    def roi_pool(self, feat, proposals, image_shape):
+        spatial_scale = 0.0625  # same as in forward()
+        pooled_feats = torchvision.ops.roi_pool(
+            feat,
+            [proposals],
+            output_size=self.pool_size,
+            spatial_scale=spatial_scale
+        )
+        return pooled_feats
     
     def forward(self, feat, proposals, image_shape, target):
         """Forward pass for ROI head"""

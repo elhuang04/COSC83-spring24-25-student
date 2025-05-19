@@ -6,6 +6,7 @@ import torchvision
 from PIL import Image, ImageDraw
 import math
 
+
 # Import your modules
 from src.faster_rcnn import (
     FasterRCNN, RegionProposalNetwork, ROIHead, 
@@ -14,6 +15,7 @@ from src.faster_rcnn import (
     sample_positive_negative, clamp_boxes_to_image_boundary,
     transform_boxes_to_original_size
 )
+from src.mask_rcnn import MaskRCNN
 
 def test_iou():
     """Test IoU calculation function"""
@@ -432,6 +434,56 @@ def test_visualization(image_path=None):
     
     print("Visualization test complete. Output saved as 'detection_output.png'\n")
 
+def test_mask_rcnn_forward():
+    """Simple test for Mask R-CNN forward pass with only RPN and MaskRCNN outputs"""
+
+    model_config = {
+        'im_channels': 3,
+        'aspect_ratios': [0.5, 1, 2],
+        'scales': [128, 256, 512],
+        'min_im_size': 600,
+        'max_im_size': 1000,
+        'backbone_out_channels': 512,
+        'fc_inner_dim': 1024,
+        'rpn_bg_threshold': 0.3,
+        'rpn_fg_threshold': 0.7,
+        'rpn_nms_threshold': 0.7,
+        'rpn_train_prenms_topk': 12000,
+        'rpn_test_prenms_topk': 6000,
+        'rpn_train_topk': 2000,
+        'rpn_test_topk': 300,
+        'rpn_batch_size': 256,
+        'rpn_pos_fraction': 0.5,
+        'roi_iou_threshold': 0.5,
+        'roi_low_bg_iou': 0.0,
+        'roi_pool_size': 7,
+        'roi_nms_threshold': 0.3,
+        'roi_topk_detections': 100,
+        'roi_score_threshold': 0.05,
+        'roi_batch_size': 128,
+        'roi_pos_fraction': 0.25,
+    }
+
+    dummy_image = torch.rand(1, 3, 256, 256)
+    num_classes = 21
+    mask_rcnn = MaskRCNN(model_config, num_classes)
+    mask_rcnn.eval()
+
+    # Forward pass without targets
+    rpn_out, maskrcnn_out = mask_rcnn(dummy_image)
+
+    # Training mode with dummy target
+    target = {
+        'bboxes': torch.tensor([[[50, 50, 100, 100], [120, 120, 170, 170]]], dtype=torch.float32),
+        'labels': torch.tensor([[1, 2]], dtype=torch.long),
+        'masks': torch.rand(1, 2, 28, 28),
+    }
+
+    mask_rcnn.train()
+    rpn_out, maskrcnn_out = mask_rcnn(dummy_image, target)
+
+    print("Mask R-CNN forward pass test passed!")
+
 def run_all_tests():
     """Run all tests"""
     print("Running all Faster R-CNN component tests...\n")
@@ -454,6 +506,9 @@ def run_all_tests():
     # Test visualization
     # You can provide a real image path if available
     test_visualization()
+
+    # Mask RCNN
+    test_mask_rcnn_forward()
     
     print("All tests completed successfully!")
 
