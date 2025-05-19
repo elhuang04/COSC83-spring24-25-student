@@ -49,6 +49,14 @@ def train(args):
     faster_rcnn_model.train()
     faster_rcnn_model.to(device)
 
+
+    ckpt_path = os.path.join(train_config['task_name'], train_config['ckpt_name'])
+    start_epoch = 0
+    if os.path.exists(ckpt_path):
+        print(f"Loading checkpoint from {ckpt_path}")
+        faster_rcnn_model.load_state_dict(torch.load(ckpt_path))
+        start_epoch = int(train_config['ckpt_name'].split('_')[-1].split('.')[0]) + 1
+
     if not os.path.exists(train_config['task_name']):
         os.mkdir(train_config['task_name'])
     optimizer = torch.optim.SGD(lr=train_config['lr'],
@@ -62,12 +70,14 @@ def train(args):
     num_epochs = train_config['num_epochs']
     step_count = 1
 
-    for i in range(num_epochs):
+    for i in range(start_epoch, num_epochs):
         rpn_classification_losses = []
         rpn_localization_losses = []
         frcnn_classification_losses = []
         frcnn_localization_losses = []
         optimizer.zero_grad()
+
+        
         
         for im, target, fname in tqdm(train_dataset):
             im = im.float().to(device)
@@ -92,8 +102,11 @@ def train(args):
         print('Finished epoch {}'.format(i))
         optimizer.step()
         optimizer.zero_grad()
-        torch.save(faster_rcnn_model.state_dict(), os.path.join(train_config['task_name'],
-                                                                train_config['ckpt_name']))
+        # torch.save(faster_rcnn_model.state_dict(), os.path.join(train_config['task_name'],
+        #                                                         train_config['ckpt_name']))
+        ckpt_epoch_path = os.path.join(train_config['task_name'], f"{train_config['ckpt_name'].split('.')[0]}_{i}.pth")
+        torch.save(faster_rcnn_model.state_dict(), ckpt_epoch_path)
+
         loss_output = ''
         loss_output += 'RPN Classification Loss : {:.4f}'.format(np.mean(rpn_classification_losses))
         loss_output += ' | RPN Localization Loss : {:.4f}'.format(np.mean(rpn_localization_losses))
