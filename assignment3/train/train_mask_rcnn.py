@@ -48,7 +48,7 @@ def train(args):
     voc = VOCDataset('train',
                      im_dir=dataset_config['im_train_path'],
                      ann_dir=dataset_config['ann_train_path'],
-                     use_masks=True)
+                     )
     
     train_loader = DataLoader(voc,
                               batch_size=1,
@@ -59,8 +59,9 @@ def train(args):
     model.train()
     model.to(device)
 
-    os.makedirs(train_config['task_name'], exist_ok=True)
-    ckpt_path = os.path.join(train_config['task_name'], train_config['ckpt_name'])
+    checkpoint_dir = train_config['task_name'] + '_mask'
+    os.makedirs(checkpoint_dir, exist_ok=True)
+    ckpt_path = os.path.join(checkpoint_dir, train_config['ckpt_name'])
 
     optimizer = torch.optim.SGD(
         params=filter(lambda p: p.requires_grad, model.parameters()),
@@ -92,7 +93,7 @@ def train(args):
             im = im.float().to(device)
             target['bboxes'] = target['bboxes'].float().to(device)
             target['labels'] = target['labels'].long().to(device)
-            target['masks'] = target['masks'].float().to(device)
+            #target['masks'] = target['masks'].float().to(device)
 
             rpn_output, maskrcnn_output = model(im, target)
 
@@ -102,15 +103,15 @@ def train(args):
             mask_preds = maskrcnn_output
             proposals = rpn_output['proposals']
             gt_classes = target['labels']
-            gt_masks = target['masks']
+            #gt_masks = target['masks']
 
-            mask_loss = model.mask_head.loss(mask_preds, gt_masks, proposals, gt_classes)
+            #mask_loss = model.mask_head.loss(mask_preds, gt_masks, proposals, gt_classes)
 
-            total_loss = rpn_cls_loss + rpn_loc_loss + mask_loss
+            total_loss = rpn_cls_loss + rpn_loc_loss #+ mask_loss
 
             rpn_cls_losses.append(rpn_cls_loss.item())
             rpn_loc_losses.append(rpn_loc_loss.item())
-            mask_losses.append(mask_loss.item())
+            #mask_losses.append(mask_loss.item())
 
             (total_loss / acc_steps).backward()
 
@@ -142,6 +143,6 @@ def train(args):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Arguments for Mask R-CNN training')
     parser.add_argument('--config', dest='config_path',
-                        default='config/voc_maskrcnn.yaml', type=str)
+                        default='config/voc.yaml', type=str)
     args = parser.parse_args()
     train(args)
