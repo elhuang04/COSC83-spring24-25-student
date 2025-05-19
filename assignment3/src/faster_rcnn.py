@@ -596,6 +596,9 @@ class ROIHead(nn.Module):
                 pred_labels,
                 pred_scores
             )
+
+            pred_labels = pred_labels.to(torch.int64) #cast to int? - adjustment to pass visualization test
+
             frcnn_output['boxes'] = pred_boxes
             frcnn_output['scores'] = pred_scores
             frcnn_output['labels'] = pred_labels

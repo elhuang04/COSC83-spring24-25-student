@@ -419,6 +419,8 @@ def test_visualization(image_path=None):
         plt.gca().add_patch(
             plt.Rectangle((x1, y1), x2 - x1, y2 - y1, fill=False, edgecolor='red', linewidth=2)
         )
+        print(f"label: {label}, score: {score}")
+        print(f"index label operation?: {idx2label[label]}")
         plt.text(
             x1, y1, f'{idx2label[label]}: {score:.2f}', 
             bbox=dict(facecolor='yellow', alpha=0.5)
